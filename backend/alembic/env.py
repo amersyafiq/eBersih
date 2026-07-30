@@ -12,7 +12,7 @@ from urllib.parse import quote_plus
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
-config.set_main_option("sqlalchemy.url", f'mssql+pyodbc://{settings.db_username}:{settings.db_password}@{settings.db_server}/{settings.db_name}?driver={settings.db_driver}&Encrypt=yes&TrustServerCertificate=yes')
+config.set_main_option("sqlalchemy.url", f'mssql+pyodbc://{settings.db_username}:{settings.db_password}@{settings.db_server}/{settings.db_name}?driver={quote_plus(settings.db_driver)}&Encrypt=yes&TrustServerCertificate=yes')
 
 
 # Interpret the config file for Python logging.

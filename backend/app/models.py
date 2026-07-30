@@ -26,6 +26,7 @@ class Campus(Base):
     State = Column(String(5), nullable=False)
 
     zones = relationship("Zone", back_populates="campus")
+    buildings = relationship("Campus", back_populates="campus")
 
 
 class Zone(Base):
@@ -51,9 +52,11 @@ class Building(Base):
     BuildingCode = Column(String(5), nullable=False, unique=True)
     BuildingName = Column(String(255), nullable=False)
     IsActive = Column(Boolean, nullable=False, default=True)
-    ZoneID = Column(Integer, ForeignKey("Zone.ZoneID"), nullable=False)
+    ZoneID = Column(Integer, ForeignKey("Zone.ZoneID"), nullable=True)
+    CampusCode = Column(String(3), ForeignKey("Campus.CampusCode"), nullable=False)
 
     zone = relationship("Zone", back_populates="buildings")
+    campus = relationship("Campus", back_populates="buildings")
     blocks = relationship("Block", back_populates="building")
 
 

@@ -1,5 +1,6 @@
 from sqlalchemy import (
     Column,
+    Float,
     Integer,
     String,
     Boolean,
@@ -10,6 +11,7 @@ from sqlalchemy import (
     ForeignKey,
     UniqueConstraint,
     CheckConstraint,
+    Index,
     func,
 )
 from sqlalchemy.orm import relationship
@@ -22,11 +24,11 @@ class Campus(Base):
     __tablename__ = "Campus"
 
     CampusCode = Column(String(3), primary_key=True)
-    CampusName = Column(String(3), nullable=False)
+    CampusName = Column(String(255), nullable=False)
     State = Column(String(5), nullable=False)
 
     zones = relationship("Zone", back_populates="campus")
-    buildings = relationship("Campus", back_populates="campus")
+    buildings = relationship("Building", back_populates="campus")
 
 
 class Zone(Base):
@@ -35,13 +37,13 @@ class Zone(Base):
     ZoneID = Column(Integer, primary_key=True, autoincrement=True)
     ZoneCode = Column(String(30), nullable=False, unique=True)
     ZoneName = Column(String(255), nullable=False)
-    IsActive = Column(Boolean, nullable=False, default=True)
+    IsActive = Column(Boolean, nullable=False, server_default="1")
     CampusCode = Column(String(3), ForeignKey("Campus.CampusCode"), nullable=False)
 
     campus = relationship("Campus", back_populates="zones")
     buildings = relationship("Building", back_populates="zone")
     company_zones = relationship("CompanyZone", back_populates="zone")
-    staff = relationship("Staff", back_populates="zone")
+    user = relationship("User", back_populates="zone")
     ga_schedules = relationship("GASchedule", back_populates="zone")
 
 
@@ -51,7 +53,7 @@ class Building(Base):
     BuildingID = Column(Integer, primary_key=True, autoincrement=True)
     BuildingCode = Column(String(5), nullable=False, unique=True)
     BuildingName = Column(String(255), nullable=False)
-    IsActive = Column(Boolean, nullable=False, default=True)
+    IsActive = Column(Boolean, nullable=False, server_default="1")
     ZoneID = Column(Integer, ForeignKey("Zone.ZoneID"), nullable=True)
     CampusCode = Column(String(3), ForeignKey("Campus.CampusCode"), nullable=False)
 
@@ -66,7 +68,7 @@ class Block(Base):
     BlockID = Column(Integer, primary_key=True, autoincrement=True)
     BlockCode = Column(String(10), nullable=False, unique=True)
     BlockName = Column(String(255), nullable=False)
-    IsActive = Column(Boolean, nullable=False, default=True)
+    IsActive = Column(Boolean, nullable=False, server_default="1")
     BuildingID = Column(Integer, ForeignKey("Building.BuildingID"), nullable=False)
 
     building = relationship("Building", back_populates="blocks")
@@ -77,27 +79,33 @@ class Floor(Base):
     __tablename__ = "Floor"
 
     FloorID = Column(Integer, primary_key=True, autoincrement=True)
-    FloorCode = Column(String(15), nullable=False, unique=True)
+    FloorCode = Column(String(15), nullable=False, unique=False)
     FloorName = Column(String(100), nullable=False)
-    IsActive = Column(Boolean, nullable=False, default=True)
+    IsActive = Column(Boolean, nullable=False, server_default="1")
     BlockID = Column(Integer, ForeignKey("Block.BlockID"), nullable=False)
 
     block = relationship("Block", back_populates="floors")
-    rooms = relationship("Room", back_populates="floor")
+    spaces = relationship("Space", back_populates="floor")
 
 
-class Room(Base):
-    __tablename__ = "Room"
+class Space(Base):
+    __tablename__ = "Space"
 
-    RoomID = Column(Integer, primary_key=True, autoincrement=True)
-    RoomCode = Column(String(20), nullable=False, unique=True)
-    RoomName = Column(String(255), nullable=False)
-    RoomType = Column(String(50), nullable=False)
+    SpaceID = Column(Integer, primary_key=True, autoincrement=True)
+    SpaceCode = Column(String(20), nullable=False, unique=True)
+    SpaceName = Column(String(255), nullable=False)
+    SpaceDescription = Column(String(255), nullable=True)
+    SpaceType = Column(String(50), nullable=True)
+    SpaceArea = Column(Float, nullable=True)
+    SpaceEPU = Column(Float, nullable=True)
+    IsActive = Column(Boolean, nullable=False, server_default="1")
     QRCode = Column(String(500), nullable=True)
     FloorID = Column(Integer, ForeignKey("Floor.FloorID"), nullable=False)
+    TaskGroupID = Column(Integer, ForeignKey("TaskGroup.TaskGroupID"), nullable=True)
 
-    floor = relationship("Floor", back_populates="rooms")
-    room_tasks = relationship("RoomTask", back_populates="room")
+    floor = relationship("Floor", back_populates="spaces")
+    task_group = relationship("TaskGroup", back_populates="spaces")
+    assignments = relationship("Assignment", back_populates="space")
 
 
 # Tasks
@@ -107,25 +115,44 @@ class Task(Base):
 
     TaskID = Column(Integer, primary_key=True, autoincrement=True)
     TaskName = Column(String(150), nullable=False)
+    TaskType = Column(String(30), nullable=False)  # e.g. General / Washroom / Specialized
     RequiredCategory = Column(String(30), nullable=False)  # e.g. Pekerja Am / Operator Mesin
-    DefaultDuration = Column(Integer, nullable=False)  # minutes
-    FrequencyType = Column(String(20), nullable=False)
-    IsActive = Column(Boolean, nullable=False, default=True)
+    DurationBasis = Column(String(10), nullable=False)  # e.g. Area / Fixed
+    DurationValue = Column(Float, nullable=False)
+    IsActive = Column(Boolean, nullable=False, server_default="1")
 
-    room_tasks = relationship("RoomTask", back_populates="task")
+    task_group_tasks = relationship("TaskGroupTask", back_populates="task")
+    assignments = relationship("Assignment", back_populates="task")
 
 
-class RoomTask(Base):
-    __tablename__ = "RoomTask"
+class TaskGroup(Base):
+    __tablename__ = "TaskGroup"
 
-    RoomTaskID = Column(Integer, primary_key=True, autoincrement=True)
-    Slot = Column(String(20), nullable=True)
-    RoomID = Column(Integer, ForeignKey("Room.RoomID"), nullable=False)
-    TaskID = Column(Integer, ForeignKey("Task.TaskID"), nullable=False)
+    TaskGroupID = Column(Integer, primary_key=True, autoincrement=True)
+    TaskGroupName = Column(String(100), nullable=False)
+    Description = Column(String(255), nullable=True)
+    IsActive = Column(Boolean, nullable=False, server_default="1")
 
-    room = relationship("Room", back_populates="room_tasks")
-    task = relationship("Task", back_populates="room_tasks")
-    assignments = relationship("Assignment", back_populates="room_task")
+    spaces = relationship("Space", back_populates="task_group")
+    task_group_tasks = relationship("TaskGroupTask", back_populates="task_group")
+
+
+class TaskGroupTask(Base):
+    """Identifying relationship: the composite PK IS the (TaskGroupID,
+    TaskID) pair — no surrogate key. A given Task can only appear once
+    per TaskGroup, enforced structurally rather than via a separate
+    unique constraint."""
+    __tablename__ = "TaskGroupTask"
+
+    TaskGroupID = Column(Integer, ForeignKey("TaskGroup.TaskGroupID"), primary_key=True)
+    TaskID = Column(Integer, ForeignKey("Task.TaskID"), primary_key=True)
+
+    FrequencyType = Column(String(20), nullable=False)  # e.g. Daily / Weekly / BiWeekly / Monthly / On Demand
+    FrequencyValue = Column(Integer, nullable=True)
+    Slot = Column(String(20), nullable=True)  # e.g. Morning / Afternoon / Evening / Night
+
+    task_group = relationship("TaskGroup", back_populates="task_group_tasks")
+    task = relationship("Task", back_populates="task_group_tasks")
 
 
 # Company / Contractor
@@ -139,7 +166,7 @@ class Company(Base):
     CompanyPhone = Column(String(50), nullable=False)
 
     company_zones = relationship("CompanyZone", back_populates="company")
-    staff = relationship("Staff", back_populates="company")
+    users = relationship("User", back_populates="company")
 
 
 class CompanyZone(Base):
@@ -147,13 +174,13 @@ class CompanyZone(Base):
 
     CompanyID = Column(Integer, ForeignKey("Company.CompanyID"), primary_key=True)
     ZoneID = Column(Integer, ForeignKey("Zone.ZoneID"), primary_key=True)
-    IsActive = Column(Boolean, nullable=False, default=True)
+    IsActive = Column(Boolean, nullable=False, server_default="1")
 
     company = relationship("Company", back_populates="company_zones")
     zone = relationship("Zone", back_populates="company_zones")
 
 
-# Users / Staff
+# Users
 
 class User(Base):
     __tablename__ = "User"
@@ -163,37 +190,19 @@ class User(Base):
     Email = Column(String(150), nullable=False, unique=True)
     Password = Column(String(255), nullable=False)
     PhoneNo = Column(String(20), nullable=True)
-    IsActive = Column(Boolean, nullable=False, default=True)
+    Role = Column(String(20), nullable=False) # e.g. Cleaner / Contractor / Facility Admin 
+    Category = Column(String(30), nullable=True) # e.g. Pekerja Am / Operator Mesin / Penyelia
+    IsActive = Column(Boolean, nullable=False, server_default="1")
     CreatedAt = Column(DATETIME2, nullable=False, server_default=func.now())
     UpdatedAt = Column(DATETIME2, nullable=True, onupdate=func.now())
+    CompanyID = Column(Integer, ForeignKey("Company.CompanyID"), nullable=True)
+    ZoneID = Column(Integer, ForeignKey("Zone.ZoneID"), nullable=True)
 
-    staff = relationship("Staff", back_populates="user", uselist=False)
+    company = relationship( "Company", back_populates="users" )
+    zone = relationship( "Zone", back_populates="users" )
     attendances = relationship("Attendance", back_populates="user")
-
-
-class Staff(Base):
-    __tablename__ = "Staff"
-
-    UserID = Column(Integer, ForeignKey("User.UserID"), primary_key=True)
-    Role = Column(String(20), nullable=False)  # Cleaner / Contractor / Facility Admin
-    Category = Column(String(30), nullable=False)  # Pekerja Am / Operator Mesin / Penyelia
-    CompanyID = Column(Integer, ForeignKey("Company.CompanyID"), nullable=False)
-    ZoneID = Column(Integer, ForeignKey("Zone.ZoneID"), nullable=False)
-
-    user = relationship("User", back_populates="staff")
-    company = relationship("Company", back_populates="staff")
-    zone = relationship("Zone", back_populates="staff")
-
-    cleaner_assignments = relationship(
-        "Assignment",
-        back_populates="cleaner",
-        foreign_keys="Assignment.CleanerID",
-    )
-    supervisor_assignments = relationship(
-        "Assignment",
-        back_populates="supervisor",
-        foreign_keys="Assignment.SupervisorID",
-    )
+    cleaner_assignments = relationship( "Assignment", back_populates="cleaner", foreign_keys="Assignment.CleanerID" )
+    supervisor_assignments = relationship( "Assignment", back_populates="supervisor", foreign_keys="Assignment.SupervisorID" )
 
 
 class Attendance(Base):
@@ -234,6 +243,7 @@ class Assignment(Base):
             "CleanRating BETWEEN 1 AND 3 OR CleanRating IS NULL",
             name="CK_CleanRating",
         ),
+        Index("IX_Assignment_Space_Task", "SpaceID", "TaskID"),
     )
 
     AssignID = Column(Integer, primary_key=True, autoincrement=True)
@@ -241,12 +251,16 @@ class Assignment(Base):
     StartTime = Column(Time, nullable=True)
     EndTime = Column(Time, nullable=True)
     CleanRating = Column(Integer, nullable=True)
-    RoomTaskID = Column(Integer, ForeignKey("RoomTask.RoomTaskID"), nullable=False)
-    ScheduleID = Column(Integer, ForeignKey("GASchedule.ScheduleID"), nullable=False)
-    CleanerID = Column(Integer, ForeignKey("Staff.UserID"), nullable=False)
-    SupervisorID = Column(Integer, ForeignKey("Staff.UserID"), nullable=True)
+    EstimatedDuration = Column(Integer, nullable=True)
 
-    room_task = relationship("RoomTask", back_populates="assignments")
+    SpaceID = Column(Integer, ForeignKey("Space.SpaceID"), nullable=False)
+    TaskID = Column(Integer, ForeignKey("Task.TaskID"), nullable=False)
+    ScheduleID = Column(Integer, ForeignKey("GASchedule.ScheduleID"), nullable=False)
+    CleanerID = Column(Integer, ForeignKey("User.UserID"), nullable=False)
+    SupervisorID = Column(Integer, ForeignKey("User.UserID"), nullable=True)
+
+    space = relationship("Space", back_populates="assignments")
+    task = relationship("Task", back_populates="assignments")
     schedule = relationship("GASchedule", back_populates="assignments")
-    cleaner = relationship( "Staff", back_populates="cleaner_assignments", foreign_keys=[CleanerID], )
-    supervisor = relationship( "Staff", back_populates="supervisor_assignments", foreign_keys=[SupervisorID], )
+    cleaner = relationship("User", back_populates="cleaner_assignments", foreign_keys=[CleanerID])
+    supervisor = relationship("User", back_populates="supervisor_assignments", foreign_keys=[SupervisorID])

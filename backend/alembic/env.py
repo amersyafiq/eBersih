@@ -6,7 +6,7 @@ from sqlalchemy import pool
 from alembic import context
 
 from app.models import Base #Import base instance from models.py
-from app.config import settings
+from backend.app.config.config import settings
 from urllib.parse import quote_plus
 
 # this is the Alembic Config object, which provides

@@ -17,7 +17,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.mssql import DATETIME2
 
-from app.database import Base
+from .config.database import Base
 
 
 class Campus(Base):
@@ -43,7 +43,7 @@ class Zone(Base):
     campus = relationship("Campus", back_populates="zones")
     buildings = relationship("Building", back_populates="zone")
     company_zones = relationship("CompanyZone", back_populates="zone")
-    user = relationship("User", back_populates="zone")
+    users = relationship("User", back_populates="zone")
     ga_schedules = relationship("GASchedule", back_populates="zone")
 
 

@@ -1,9 +1,10 @@
 from sqlalchemy.orm import Session
-from .. import database, models
+from .. import models
 from bs4 import BeautifulSoup
 import requests
 import re
 import collections
+from ..config import database
 from .classify_room import classify_room
 
 

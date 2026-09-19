@@ -12,6 +12,8 @@ class Settings(BaseSettings):
     refresh_token_expire_minutes: int = 60 * 24 * 7
     redis_host: str
     redis_port: str
+    api_key: str
+    api_key_name: str
 
     class Config:
         env_file = ".env"

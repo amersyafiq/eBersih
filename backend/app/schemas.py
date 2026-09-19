@@ -1,6 +1,6 @@
-from datetime import datetime
+from datetime import datetime, time
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
-from typing import Optional, Annotated
+from typing import List, Optional, Annotated
 
 class Token(BaseModel):
     access_token: str
@@ -215,3 +215,46 @@ class ReportSummary(BaseModel):
     active_tasks: int
     total_task_groups: int
     active_task_groups: int
+
+# ==================================================
+
+class AssignmentBase(BaseModel):
+    AssignID: int
+    Status: str
+    RoomID: int
+    TaskID: int
+    ScheduleID: int
+    CleanerID: int
+
+class AssigmentCreate(AssignmentBase):
+    pass
+
+class AssignmentOut(AssignmentBase):
+    StartTime: time
+    EndTime: time
+    CleanRating: int
+    SupervisorID: int
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ScheduleBase(BaseModel):
+    TriggeredAt: datetime
+    FitnessValue: float
+    Generations: int
+    TotalTasks: int
+    TotalCleaners: int
+    ZoneID: int
+
+class ScheduleCreate(BaseModel):
+    pass
+
+class ScheduleOut(BaseModel):
+    ScheduleID: int
+    CompletedAt: datetime
+    assignment: List[AssignmentOut]
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+

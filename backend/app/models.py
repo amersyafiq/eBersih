@@ -106,6 +106,7 @@ class Space(Base):
     floor = relationship("Floor", back_populates="spaces")
     task_group = relationship("TaskGroup", back_populates="spaces")
     assignments = relationship("Assignment", back_populates="space")
+    work_orders = relationship("WorkOrder", back_populates="space")
 
 
 # Tasks
@@ -138,10 +139,6 @@ class TaskGroup(Base):
 
 
 class TaskGroupTask(Base):
-    """Identifying relationship: the composite PK IS the (TaskGroupID,
-    TaskID) pair — no surrogate key. A given Task can only appear once
-    per TaskGroup, enforced structurally rather than via a separate
-    unique constraint."""
     __tablename__ = "TaskGroupTask"
 
     TaskGroupID = Column(Integer, ForeignKey("TaskGroup.TaskGroupID"), primary_key=True)
@@ -150,6 +147,7 @@ class TaskGroupTask(Base):
     FrequencyType = Column(String(20), nullable=False)  # e.g. Daily / Weekly / BiWeekly / Monthly / On Demand
     FrequencyValue = Column(Integer, nullable=True)
     Slot = Column(String(20), nullable=True)  # e.g. Morning / Afternoon / Evening / Night
+    IsActive = Column(Boolean, nullable=False, server_default="1")
 
     task_group = relationship("TaskGroup", back_populates="task_group_tasks")
     task = relationship("Task", back_populates="task_group_tasks")
@@ -203,6 +201,7 @@ class User(Base):
     attendances = relationship("Attendance", back_populates="user")
     cleaner_assignments = relationship( "Assignment", back_populates="cleaner", foreign_keys="Assignment.CleanerID" )
     supervisor_assignments = relationship( "Assignment", back_populates="supervisor", foreign_keys="Assignment.SupervisorID" )
+    leave_requests = relationship("LeaveRequest", back_populates="user", foreign_keys="LeaveRequest.UserID")
 
 
 class Attendance(Base):
@@ -215,7 +214,24 @@ class Attendance(Base):
     UserID = Column(Integer, ForeignKey("User.UserID"), nullable=False)
 
     user = relationship("User", back_populates="attendances")
+    
 
+class LeaveRequest(Base):
+    __tablename__ = "LeaveRequest"
+
+    LeaveID = Column(Integer, primary_key=True, autoincrement=True)
+    StartDate = Column(Date, nullable=False)
+    EndDate = Column(Date, nullable=False)  # same as StartDate for a single-day request
+    LeaveType = Column(String(30), nullable=True)  # e.g. "Annual", "Medical", "Emergency"
+    Reason = Column(String(255), nullable=True)
+    Status = Column(String(20), nullable=False, server_default="Pending")  # "Pending" / "Approved" / "Rejected"
+    CreatedAt = Column(DATETIME2, nullable=False, server_default=func.now())
+    UpdatedAt = Column(DATETIME2, nullable=True, onupdate=func.now())
+    UserID = Column(Integer, ForeignKey("User.UserID"), nullable=False)
+    ApprovedBy = Column(Integer, ForeignKey("User.UserID"), nullable=True)  # the contractor/supervisor who actioned it
+
+    user = relationship("User", back_populates="leave_requests", foreign_keys=[UserID])
+    approver = relationship("User", foreign_keys=[ApprovedBy])
 
 # GA Scheduling & Assignments
 
@@ -236,6 +252,25 @@ class GASchedule(Base):
     assignments = relationship("Assignment", back_populates="schedule")
 
 
+class WorkOrder(Base):
+    __tablename__ = "WorkOrder"
+    __table_args__ = (
+        Index("IX_WorkOrder_Space", "SpaceID"),
+    )
+
+    WorkOrderID = Column(Integer, primary_key=True, autoincrement=True)
+    WrID = Column(String(50), nullable=False, unique=True)  # eAduan's WR ID (for reference)
+    Requestor = Column(String(255), nullable=False)
+    ProblemDesc = Column(String(500), nullable=True)
+    Priority = Column(String(20), nullable=False, server_default="Normal")  # Low / Normal / High / Urgent
+    Status = Column(String(20), nullable=False, server_default="New")      # New / Assigned / InProgress / Completed / Cancelled
+    IssuedAt = Column(DATETIME2, nullable=False, server_default=func.now())  # when eAduan sent it
+    SpaceID = Column(Integer, ForeignKey("Space.SpaceID"), nullable=False)
+
+    space = relationship("Space", back_populates="work_orders")
+    assignment = relationship("Assignment", back_populates="work_order", uselist=False)
+
+
 class Assignment(Base):
     __tablename__ = "Assignment"
     __table_args__ = (
@@ -254,13 +289,15 @@ class Assignment(Base):
     EstimatedDuration = Column(Integer, nullable=True)
 
     SpaceID = Column(Integer, ForeignKey("Space.SpaceID"), nullable=False)
-    TaskID = Column(Integer, ForeignKey("Task.TaskID"), nullable=False)
-    ScheduleID = Column(Integer, ForeignKey("GASchedule.ScheduleID"), nullable=False)
+    TaskID = Column(Integer, ForeignKey("Task.TaskID"), nullable=True)
+    ScheduleID = Column(Integer, ForeignKey("GASchedule.ScheduleID"), nullable=True)
     CleanerID = Column(Integer, ForeignKey("User.UserID"), nullable=False)
     SupervisorID = Column(Integer, ForeignKey("User.UserID"), nullable=True)
+    WorkOrderID = Column(Integer, ForeignKey("WorkOrder.WorkOrderID"), nullable=True, unique=True)
 
     space = relationship("Space", back_populates="assignments")
     task = relationship("Task", back_populates="assignments")
     schedule = relationship("GASchedule", back_populates="assignments")
     cleaner = relationship("User", back_populates="cleaner_assignments", foreign_keys=[CleanerID])
     supervisor = relationship("User", back_populates="supervisor_assignments", foreign_keys=[SupervisorID])
+    work_order = relationship("WorkOrder", back_populates="assignment")

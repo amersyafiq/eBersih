@@ -13,6 +13,10 @@ class TokenData(BaseModel):
 class RefreshRequest(BaseModel):
     refresh_token: str
 
+class LoginRequest(BaseModel):
+    email: EmailStr
+    password: str
+
 # =================================================
 
 class CompanyResponse(BaseModel):

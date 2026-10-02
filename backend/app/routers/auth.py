@@ -11,9 +11,9 @@ router = APIRouter(
 )
 
 @router.post("/login", response_model=schemas.Token)
-def authenticate(user_credentials: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(database.get_db)):
+def authenticate(user_credentials: schemas.LoginRequest, db: Session = Depends(database.get_db)):
 
-    user = db.query(models.User).filter(models.User.Email == user_credentials.username).first()
+    user = db.query(models.User).filter(models.User.Email == user_credentials.email).first()
     if not user or not utils.verify(user_credentials.password, user.Password):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Invalid Credentials") 
 

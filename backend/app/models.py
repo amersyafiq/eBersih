@@ -29,6 +29,7 @@ class Campus(Base):
 
     zones = relationship("Zone", back_populates="campus")
     buildings = relationship("Building", back_populates="campus")
+    users = relationship("User", back_populates="campus")
 
 
 class Zone(Base):
@@ -195,9 +196,11 @@ class User(Base):
     UpdatedAt = Column(DATETIME2, nullable=True, onupdate=func.now())
     CompanyID = Column(Integer, ForeignKey("Company.CompanyID"), nullable=True)
     ZoneID = Column(Integer, ForeignKey("Zone.ZoneID"), nullable=True)
+    CampusCode = Column(String(3), ForeignKey("Campus.CampusCode"), nullable=True)
 
     company = relationship( "Company", back_populates="users" )
     zone = relationship( "Zone", back_populates="users" )
+    campus = relationship("Campus", back_populates="users")
     attendances = relationship("Attendance", back_populates="user")
     cleaner_assignments = relationship( "Assignment", back_populates="cleaner", foreign_keys="Assignment.CleanerID" )
     supervisor_assignments = relationship( "Assignment", back_populates="supervisor", foreign_keys="Assignment.SupervisorID" )

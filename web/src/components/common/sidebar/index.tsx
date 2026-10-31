@@ -13,20 +13,27 @@ import { NAV_DATA } from './data';
 import { CloseIcon, SidebarExpandedIcon, ThreeDots } from './icon';
 import NavItem from './nav-item';
 import { findActiveGroupKey } from './utils';
+import { UseQueryResult } from '@tanstack/react-query';
+import { CurrentUserProps } from '@/src/types';
+import SidebarSkeletion from './skeleton';
 
 export default function Sidebar({
     isSidebarOpen,
     toggleSidebar,
     isMobileSheet = false,
     onItemClick,
+    currentUserQuery
 }: {
     isSidebarOpen: boolean;
     toggleSidebar: () => void;
     isMobileSheet?: boolean;
     onItemClick?: () => void;
+    currentUserQuery: UseQueryResult<CurrentUserProps, Error>;
 }) {
     const pathname = usePathname();
     const { theme } = useTheme();
+
+    const { isLoading } = currentUserQuery
 
     // Compute which group should be open based on the current route
     const activeGroupKey = useMemo(
@@ -91,7 +98,8 @@ export default function Sidebar({
                     expandedKeys={expandedKeys}
                     onExpandedChange={setExpandedKeys}
                 >
-                    {NAV_DATA.map((section) => (
+                    { isLoading && <SidebarSkeletion isSidebarOpen={isSidebarOpen} /> }
+                    { !isLoading && NAV_DATA.map((section) => (
                         <div key={section.label}>
                             {/* Expanded: show section label | Collapsed: show divider between sections */}
                             {isSidebarOpen ? (

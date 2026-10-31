@@ -1,17 +1,12 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { Bounce, ToastContainer } from 'react-toastify';
 import "./globals.css";
 import Providers from "./providers";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const geistInter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
 });
 
@@ -29,9 +24,9 @@ export default function RootLayout({
     <html
       suppressHydrationWarning
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistInter.className} h-full overflow-hidden antialiased`}
     >
-      <body className="min-h-full flex flex-col">
+      <body className="h-full overflow-hidden bg-background-gray-secondary_alt_2">
         <ThemeProvider defaultTheme="light" enableSystem>
           <Providers>
             {children}

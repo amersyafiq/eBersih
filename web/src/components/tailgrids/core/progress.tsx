@@ -8,9 +8,10 @@ type ProgressProps = {
   className?: string;
   trackColor?: string;
   barColor?: string;
+  labelColor?: string;
 };
 
-export function Progress({ progress, withLabel, className, trackColor, barColor }: ProgressProps) {
+export function Progress({ progress, withLabel, className, trackColor, barColor, labelColor }: ProgressProps) {
   return (
     <div className={cn("flex max-w-80 items-center gap-3", className)}>
       <div
@@ -39,7 +40,12 @@ export function Progress({ progress, withLabel, className, trackColor, barColor 
       </div>
 
       {withLabel && (
-        <div className="text-sm leading-none font-medium text-text-secondary">{progress}%</div>
+        <div 
+          style={{color: labelColor}}
+          className="text-sm leading-none font-medium text-text-secondary"
+        >
+            {progress}%
+        </div>
       )}
     </div>
   );

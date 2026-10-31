@@ -30,7 +30,7 @@ def get_zones(campus_code: str, db: Session = Depends(database.get_db)):
     return facility_service.get_zones(db, campus_code)
 
 @router.get("/zone/{zone_id}", response_model=schemas.ZoneOut, dependencies=[AUTHENTICATED])
-def get_zones(zone_id: str, db: Session = Depends(database.get_db)):
+def get_zone(zone_id: str, db: Session = Depends(database.get_db)):
     return facility_service.get_zone(db, zone_id)
 
 

@@ -12,7 +12,6 @@ async function handler(req: NextRequest, context: { params: Promise<{ path: stri
     const refreshToken = cookieStore.get("refresh_token")?.value;
 
     const url = `${API_URL}/${path.join("/")}${req.nextUrl.search}`;
-    console.log('url' + url)
 
     // Forward incoming headers while excluding host-specific headers
     const headers = new Headers(req.headers);

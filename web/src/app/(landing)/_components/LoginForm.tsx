@@ -10,7 +10,7 @@ import { EyeClose } from "./icons";
 import { Eye } from "@tailgrids/icons";
 import { Checkbox } from '@/src/components/tailgrids/core/checkbox';
 import { Button } from '@/src/components/tailgrids/core/button';
-import { login } from '@/src/lib/auth/action';
+import { login } from '@/src/services/api/auth/action';
 import { useFormStatus } from 'react-dom';
 import { toast } from 'react-toastify';
 import { useRouter } from 'next/navigation';

@@ -1,36 +1,28 @@
 "use client";
 
+import { useCurrentUser } from "@/src/services/api/auth/index"
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-
-async function getCurrentUser() {
-    const res = await fetch("/api/user/me");
-    return res.json();
-}
-
 
 export default function OverviewPage() {
     // const [user, setUser] = useState<any>(null);
 
     // useEffect(() => {
-    //     async function getCurrentUser() {
+    //     async function useCurrentUser() {
     //         const res = await fetch("/api/user/me");
     //         const data = await res.json();
 
     //         setUser(data);
     //     }
 
-    //     getCurrentUser();
+    //     useCurrentUser();
     // }, []);
 
     const {
         data: user,
         isLoading,
         error,
-    } = useQuery({
-        queryKey: ["currentUser"], 
-        queryFn: getCurrentUser
-    })
+    } = useCurrentUser()
 
     return (
         <>

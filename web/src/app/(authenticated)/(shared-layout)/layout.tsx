@@ -4,14 +4,10 @@ import Header from "@/src/components/common/header";
 import Sidebar from "@/src/components/common/sidebar";
 import { SheetContent, SheetOverlay, SheetTitle } from "@/src/components/tailgrids/core/sheet";
 import { cn } from "@/src/utils/cn";
-import { useQuery } from "@tanstack/react-query";
-import { ReactNode, useEffect, useState } from "react";
-import { toast } from "react-toastify";
-import type { CurrentUserProps } from "@/src/types";
-import router from "next/router";
-import { redirect } from "next/navigation";
+import { ReactNode, useState } from "react";
+import { useCurrentUser } from "@/src/services/api/auth";
 
-export default function WithLayout({ children }: { children: ReactNode }) {
+export default function SharedLayout({ children }: { children: ReactNode }) {
   // XL+ sidebar expand/collapse state
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   // Mobile sheet open state (< xl breakpoint)
@@ -19,28 +15,7 @@ export default function WithLayout({ children }: { children: ReactNode }) {
 
   const toggleSidebar = () => setIsSidebarOpen((prev) => !prev);
 
-  const currentUserQuery = useQuery<CurrentUserProps, Error>({
-    queryKey: ["currentUser"],
-    queryFn: async () => {
-      const res = await fetch("/api/user/me");
-      if (!res.ok) {
-        const body = (await res.json().catch(() => null)) as { detail?: unknown } | null;
-        const message =
-          typeof body?.detail === "string"
-            ? body.detail
-            : `Could not load current user (${res.status}).`;
-        throw new Error(message);
-      }
-      return (await res.json()) as CurrentUserProps;
-    },
-  });
-
-  useEffect(() => {
-    if (currentUserQuery.isError) {
-      toast.error(`Failed to load profile: ${currentUserQuery.error.message}`);
-      redirect("/");
-    }
-  }, [currentUserQuery.error, currentUserQuery.isError]);
+  const currentUserQuery = useCurrentUser()
 
   return (
       <div className="flex h-full">
@@ -54,7 +29,7 @@ export default function WithLayout({ children }: { children: ReactNode }) {
           }}
           className="hidden shrink-0 overflow-hidden xl:block"
         >
-          <Sidebar isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
+          <Sidebar isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} currentUserQuery={currentUserQuery} />
         </aside>
 
         {/*  Mobile sidebar (< xl) — Sheet sliding from the left  */}
@@ -75,6 +50,7 @@ export default function WithLayout({ children }: { children: ReactNode }) {
                 setIsMobileSheetOpen(false);
               }}
               isMobileSheet
+              currentUserQuery={currentUserQuery}
             />
           </SheetContent>
         </SheetOverlay>

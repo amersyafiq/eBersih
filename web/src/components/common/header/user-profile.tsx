@@ -17,7 +17,7 @@ import {
   DropdownMenuTrigger,
 } from "@/src/components/tailgrids/core/dropdown";
 import type { CurrentUserProps } from "@/src/types";
-import { logout } from "@/src/lib/auth/action";
+import { logout } from "@/src/services/api/auth/action";
 import { AltArrowDownIcon } from "@/src/utils/icon";
 import Link from "next/link";
 import { UseQueryResult } from "@tanstack/react-query";

@@ -20,4 +20,9 @@ export interface CurrentUserProps {
         IsActive: boolean,
         CampusCode: string | null
     } | null,
+    campus: {
+        CampusCode: string | null,
+        CampusName: string | null,
+        State: string | null,
+    } | null,
 }

@@ -11,7 +11,6 @@ const loginSchema = z.object({
     password: z.string().min(6, { message: "Password must be at least 6 characters" }).trim(),
 });
 
-
 export async function login(prevState: any, formData: FormData) {
     const result = loginSchema.safeParse(Object.fromEntries(formData));
     if (!result.success) {
@@ -39,7 +38,7 @@ export async function login(prevState: any, formData: FormData) {
     }
 
     const cookieStore = await cookies();
-    cookieStore.set("access_token", data.access_token, { httpOnly: true, secure: true, sameSite: "strict", maxAge: 60 * 15, path: "/" });
+    cookieStore.set("access_token", data.access_token, { httpOnly: true, secure: true, sameSite: "strict", maxAge: 60 * 60, path: "/" });
     cookieStore.set("refresh_token", data.refresh_token, { httpOnly: true, secure: true, sameSite: "strict", maxAge: 60 * 60 * 24 * 7, path: "/" });
     cookieStore.set("role", data.role, { secure: true, sameSite: "strict", maxAge: 60 * 60 * 24 * 7, path: "/" });
 

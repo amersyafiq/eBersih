@@ -3,6 +3,7 @@ import {
   BuildingIcon,
   ContractorIcon,
   HomeIcon,
+  InvoiceIcon,
   LetterIcon,
   PieChartIcon,
   TableIcon,
@@ -48,7 +49,7 @@ export const NAV_DATA = [
       },
       {
         title: "Reports",
-        icon: <LetterIcon />,
+        icon: <InvoiceIcon />,
         items: [
           {
             title: "Workload Distribution",
@@ -71,7 +72,7 @@ export const NAV_DATA = [
     ],
   },
   {
-    label: "OTHERS",
+    label: "WORKFORCE ALLOCATION",
     items: [
       {
         title: "Charts",

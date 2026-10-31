@@ -1,3 +1,5 @@
+from sqlalchemy import true
+
 from ..models import Campus, Zone, Building, Block, Floor, Space
 from fastapi import HTTPException, status
 from sqlalchemy.orm import joinedload
@@ -14,7 +16,7 @@ def get_campus(db, campus_code):
 
 # Zone
 def get_zones(db, campus_code):
-    zones = db.query(Zone).filter(Zone.CampusCode == campus_code).all()
+    zones = db.query(Zone).filter(Zone.CampusCode == campus_code, Zone.IsActive == True).all()
     if not zones: raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Zones for {campus_code} not found")
     return zones
 

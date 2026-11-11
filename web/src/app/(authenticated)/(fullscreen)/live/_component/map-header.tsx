@@ -25,14 +25,14 @@ export default function MapHeader(
     const isLive = isToday && currentMinutes >= 7 * 60 + 30 && currentMinutes < 16 * 60 + 30;
 
     return (
-        <div className="absolute z-20 top-15 lg:top-5 left-1/2 -translate-x-1/2 w-max backdrop-blur-lg bg-white/65 shadow-lg flex items-center justify-around gap-2 rounded-full border border-base-200 px-3 py-2 text-sm font-medium text-text-100">
+        <div className="absolute z-20 top-15 lg:top-5 left-1/2 -translate-x-1/2 w-max backdrop-blur-lg bg-background-white-primary/65 shadow-lg flex items-center justify-around gap-2 rounded-full border border-base-200 px-3 py-2 text-sm font-medium text-text-100">
             
-            <p className="text-sm font-semibold ml-2">
+            <p className="text-sm font-semibold ml-2 text-text-primary">
                 {campusName}
             </p>
 
             {/* Date Stepper Controls */}
-            <div className="flex items-center gap-2 bg-white rounded-full px-2 py-1 shadow-sm border border-gray-100">
+            <div className="flex items-center gap-2 rounded-full px-2 py-1 shadow-sm border border-base-200 bg-background-white-primary">
                 <button 
                     onClick={handlePrevDay}
                     className="hover:bg-gray-100 rounded-full text-gray-500 transition-colors"
@@ -41,7 +41,7 @@ export default function MapHeader(
                     <svg className="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path></svg>
                 </button>
                 
-                <span className="w-24 text-center text-xs font-semibold text-gray-700">
+                <span className="w-24 text-center text-xs font-semibold">
                     {isToday ? "Today" : selectedDate.toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' })}
                 </span>
 
@@ -67,7 +67,7 @@ export default function MapHeader(
                     {time}
                 </Badge>
             ) : (
-                <Badge color="gray" className="px-4 text-gray-500 ml-1 flex items-center bg-gray-100" size="md">
+                <Badge color="gray" className="px-4 text-text-200 ml-1 flex items-center bg-background-white-primary border-base-200" size="md">
                     Ended
                 </Badge>
             )}

@@ -18,7 +18,7 @@ export function useCurrentUser() {
 
   useEffect(() => {
     if (query.isError) {
-      toast.error(`Failed to load profile: ${query.error.message}`);
+      toast.error(`Failed to fetch user. Please try again`);
       redirect("/");
     }
   }, [query.isError, query.error]);

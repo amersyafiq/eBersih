@@ -1,7 +1,9 @@
 from __future__ import annotations
 from datetime import datetime, time
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, StrictBool, model_validator
 from typing import List, Literal, Optional, Annotated
+
+from sqlalchemy import Boolean
 
 class Token(BaseModel):
     access_token: str
@@ -251,7 +253,7 @@ class ScheduleOut(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-# ==================================================
+# =====================LIVE=========================
 
 class BuildingStatus(BaseModel):
     CampusCode: str
@@ -299,3 +301,37 @@ class BuildingDetailsResponse(BaseModel):
 
 FacilityNode.model_rebuild()
 CleanerNode.model_rebuild()
+
+# =====================FACILITY=========================
+class FacilityTableResponse(BaseModel):
+    id: int
+    level: Literal["building", "block", "floor", "space"]
+    code: str
+    name: str
+    isActive: StrictBool
+    zoneCode: Optional[str] = None
+    zoneName: Optional[str] = None
+    spaceType: Optional[str] = None
+    spaceArea: Optional[float] = None
+    spaceEpu: Optional[float] = None
+    subRows: Optional[List[FacilityTableResponse]] = None
+
+    class Config:
+        from_attributes = True
+
+FacilityTableResponse.model_rebuild()
+
+# =====================CONTRACTOR=========================
+class ContractorTableResponse(BaseModel):
+    companyID: int
+    companyRegNo: str
+    companyName: str
+    companyPhone: str
+    assignedZones: Optional[List[str]] = None
+    totalCleaners: Optional[int] = None
+
+class ContractorCreate(BaseModel):
+    companyRegNo: str
+    companyName: str
+    companyPhone: str
+    selectedZones: List[str]

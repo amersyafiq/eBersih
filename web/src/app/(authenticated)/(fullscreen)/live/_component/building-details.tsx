@@ -293,7 +293,7 @@ export default function BuildingDetails({
     const activeTable = mode === "facility" ? facilityTable : cleanerTable;
 
     return (
-        <div className="absolute z-20 top-5 bottom-5 right-5 w-95 bg-white/95 backdrop-blur-md shadow-xl flex flex-col rounded-2xl border border-base-200 text-sm font-medium text-text-100 overflow-hidden">
+        <div className="absolute z-20 top-5 bottom-5 right-5 w-95 bg-background-white-primary/95 backdrop-blur-md shadow-xl flex flex-col rounded-2xl border border-base-200 text-sm font-medium text-text-100 overflow-hidden">
             <div className="relative w-full">
                 <Image
                     src="/images/building_image.jpg"
@@ -307,15 +307,15 @@ export default function BuildingDetails({
                 {/* 1. Header */}
                 <div className="flex items-start justify-between gap-2 px-4 py-3 relative z-10">
                     <div className="min-w-0">
-                        <span className="text-[11px] font-normal uppercase tracking-wider text-black">
+                        <span className="text-[11px] font-normal uppercase tracking-wider text-text-primary">
                             {buildingCode} • {scheduleDate}
                         </span>
-                        <h2 className="text-base font-bold text-gray-900 truncate">{buildingName}</h2>
+                        <h2 className="text-base font-bold text-text-secondary truncate">{buildingName}</h2>
                     </div>
                     <button
                         type="button"
                         onClick={onClose}
-                        className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition"
+                        className="rounded-lg p-1.5 text-text-300 hover:bg-gray-100 hover:text-gray-600 transition"
                         aria-label="Close panel"
                     >
                         <svg className="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -353,7 +353,7 @@ export default function BuildingDetails({
 
 
             {/* 3. Expand / Collapse All Quick Bar */}
-            <div className="flex items-center justify-between px-4 py-1.5 text-[11px] text-gray-500 border-b border-gray-100">
+            <div className="flex items-center justify-between px-4 py-1.5 text-[11px] text-text-200 border-b border-gray-100">
                 <span>
                     {mode === "facility" ? "Block → Floor → Space → Task" : "Cleaner → Assigned Tasks"}
                 </span>

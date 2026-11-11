@@ -7,13 +7,13 @@ import { useCurrentUser } from "@/src/services/api/auth/index";
 import { useLiveClock } from "@/src/hooks/useLiveClock";
 import { useBuildingStatus, useZones } from "@/src/services/api/live";
 import { buildZoneColorMap } from "@/src/utils/zoneColors";
-import BuildingTooltip, { type TooltipState } from "./_components/building-tooltip";
-import MapBackButton from "./_components/map-back-button";
-import MapCanvas from "./_components/map-canvas";
-import MapHeader from "./_components/map-header";
-import MapLegend from "./_components/map-legend";
+import BuildingTooltip, { type TooltipState } from "./_component/building-tooltip";
+import MapBackButton from "./_component/map-back-button";
+import MapCanvas from "./_component/map-canvas";
+import MapHeader from "./_component/map-header";
+import MapLegend from "./_component/map-legend";
 import { useDebounce } from "@/src/hooks/useDebounce";
-import BuildingDetails from "./_components/building-details";
+import BuildingDetails from "./_component/building-details";
 import { SelectedBuilding } from "./types";
 
 const CAMPUS_MAP_FILES: Record<string, { buildings: string; boundary: string }> = {
@@ -168,7 +168,7 @@ export default function RegionLabelsMap() {
                 isLoadingBuildingStatus={isLoadingBuildingStatus}
             />
 
-            <MapBackButton className="absolute left-5 top-5 z-20 shadow-lg flex items-center gap-1 rounded-lg border border-base-200 bg-white px-2 py-2 text-sm font-medium text-text-100 transition hover:bg-background-soft-100 hover:text-text-50" />
+            <MapBackButton className="absolute left-5 top-5 z-20 shadow-lg flex items-center gap-1 rounded-lg border border-base-200 bg-background-white-primary px-2 py-2 text-sm font-medium text-text-100 transition hover:bg-background-soft-100 hover:text-text-50" />
 
             <MapHeader
                 campusName={user?.campus?.CampusName}

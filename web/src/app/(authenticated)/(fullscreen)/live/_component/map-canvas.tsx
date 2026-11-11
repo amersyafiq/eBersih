@@ -10,6 +10,7 @@ import BuildingsLayer from "./buildings-layer";
 import ZoomControls from "./zoom-controls";
 import { StatusProps } from "@/src/services/api/live/types";
 import { SelectedBuilding } from "../types";
+import { useTheme } from "next-themes";
 
 const boundaryStyle = {
     color: "#9ca3af",
@@ -36,6 +37,7 @@ export default function MapCanvas({
     buildingStatus?: StatusProps[];
     setSelectedBuilding: Dispatch<SetStateAction<SelectedBuilding | null>>;
 }) {
+    const { theme } = useTheme();
     return (
         <MapContainer
             center={[3.07, 101.5]}
@@ -64,10 +66,17 @@ export default function MapCanvas({
                 />
             )}
 
-            <TileLayer
-                url="https://basemaps.cartocdn.com/rastertiles/light_nolabels/{z}/{x}/{y}.png?key=cb1_49k8_1_7825c5d39a380286b4681ec7"
-                attribution='&copy; <a href="https://www.mapbox.com/about/maps/">Mapbox</a>'
-            />
+            { theme === 'dark' ? (
+                <TileLayer
+                    url="https://basemaps.cartocdn.com/rastertiles/dark_nolabels/{z}/{x}/{y}.png?key=cb1_49k8_1_7825c5d39a380286b4681ec7"
+                    attribution='&copy; <a href="https://www.mapbox.com/about/maps/">Mapbox</a>'
+                />
+            ):(
+                <TileLayer
+                    url="https://basemaps.cartocdn.com/rastertiles/light_nolabels/{z}/{x}/{y}.png?key=cb1_49k8_1_7825c5d39a380286b4681ec7"
+                    attribution='&copy; <a href="https://www.mapbox.com/about/maps/">Mapbox</a>'
+                />
+            )}
             <ZoomControls />
         </MapContainer>
     );

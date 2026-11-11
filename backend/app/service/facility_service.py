@@ -1,6 +1,7 @@
 from sqlalchemy import true
 
 from ..models import Campus, Zone, Building, Block, Floor, Space
+from ..schemas import FacilityTableResponse
 from fastapi import HTTPException, status
 from sqlalchemy.orm import joinedload
 
@@ -110,6 +111,93 @@ def get_space(db, space_id):
     space = db.query(Space).filter(Space.SpaceID == space_id).first()
     if not space: raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Space not found")
     return space
+
+def get_facilites(db, campus_code):
+    facility_rows = (
+        db.query(
+            Building.BuildingID, Building.BuildingCode, Building.BuildingName, Building.IsActive.label("BuildingIsActive"),
+            Zone.ZoneCode, Zone.ZoneName,
+            Block.BlockID, Block.BlockCode, Block.BlockName, Block.IsActive.label("BlockIsActive"),
+            Floor.FloorID, Floor.FloorCode, Floor.FloorName, Floor.IsActive.label("FloorIsActive"),
+            Space.SpaceID, Space.SpaceCode, Space.SpaceName, Space.SpaceType, Space.SpaceArea, Space.SpaceEPU, Space.IsActive.label("SpaceIsActive"),
+        )
+        .select_from(Building)
+        .outerjoin(Zone, Zone.ZoneID == Building.ZoneID)
+        .outerjoin(Block, Block.BuildingID == Building.BuildingID)
+        .outerjoin(Floor, Floor.BlockID == Block.BlockID)
+        .outerjoin(Space, Space.FloorID == Floor.FloorID)
+        .filter(
+            Building.CampusCode == campus_code,
+            Building.ZoneID != None,
+        )
+        .order_by(Block.BlockCode, Floor.FloorCode, Space.SpaceCode)
+        .all()
+    )
+
+    buildings_map = {}
+    blocks_map = {}
+    floors_map = {}
+    spaces_seen = set()
+    for facility in facility_rows:
+        if facility.BuildingID not in buildings_map:
+            buildings_map[facility.BuildingID] = FacilityTableResponse(
+                id=facility.BuildingID,
+                level='building',
+                code=facility.BuildingCode,
+                name=facility.BuildingName,
+                isActive=facility.BuildingIsActive,
+                zoneCode=facility.ZoneCode,
+                zoneName=facility.ZoneName,
+                subRows=[],
+            )
+        building_node = buildings_map[facility.BuildingID]
+
+        if facility.BlockID is not None:
+            if facility.BlockID not in blocks_map:
+                block_node = FacilityTableResponse(
+                    id=facility.BlockID,
+                    level='block',
+                    code=facility.BlockCode,
+                    name=facility.BlockName,
+                    isActive=facility.BlockIsActive,
+                    subRows=[],
+                )
+                blocks_map[facility.BlockID] = block_node
+                building_node.subRows.append(block_node)
+            else:
+                block_node = blocks_map[facility.BlockID]
+
+            if facility.FloorID is not None:
+                if facility.FloorID not in floors_map:
+                    floor_node = FacilityTableResponse(
+                        id=facility.FloorID,
+                        level='floor',
+                        code=facility.FloorCode,
+                        name=facility.FloorName,
+                        isActive=facility.FloorIsActive,
+                        subRows=[],
+                    )
+                    floors_map[facility.FloorID] = floor_node
+                    block_node.subRows.append(floor_node)
+                else:
+                    floor_node = floors_map[facility.FloorID]
+
+                if facility.SpaceID is not None and facility.SpaceID not in spaces_seen:
+                    spaces_seen.add(facility.SpaceID)
+                    space_node = FacilityTableResponse(
+                        id=facility.SpaceID,
+                        level='space',
+                        code=facility.SpaceCode,
+                        name=facility.SpaceName,
+                        isActive=facility.SpaceIsActive,
+                        spaceType=facility.SpaceType,
+                        spaceArea=facility.SpaceArea,
+                        spaceEPU=facility.SpaceEPU,
+                    )
+                    floor_node.subRows.append(space_node)
+
+    facility_data = list(buildings_map.values())
+    return facility_data
 
 
 # IsActive toggles

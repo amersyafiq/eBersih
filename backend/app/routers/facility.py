@@ -72,3 +72,9 @@ def get_spaces(campus_code: str, zone_code: str, building_code: str, block_code:
 @router.get("/space/{space_id}", response_model=schemas.SpaceOut, dependencies=[AUTHENTICATED])
 def get_space(space_id: str, db: Session = Depends(database.get_db)):
     return facility_service.get_space(db, space_id)
+
+
+# Facility
+@router.get("/",response_model=List[schemas.FacilityTableResponse], dependencies=[ADMIN_ONLY])
+def get_facilities(db: Session = Depends(database.get_db), current_user: dict = ADMIN_ONLY):
+    return facility_service.get_facilites(db, current_user.CampusCode)

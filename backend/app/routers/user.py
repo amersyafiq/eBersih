@@ -25,3 +25,8 @@ def create_user(user: schemas.CreateUser, db: Session = Depends(database.get_db)
 def get_users(db: Session = Depends(database.get_db)):
     users = user_service.get_users(db)
     return users
+
+@router.get("/me", response_model=schemas.UserOut, dependencies=[AUTHENTICATED])
+def get_user(db: Session = Depends(database.get_db), current_user: dict = AUTHENTICATED):
+    user = user_service.get_user(db, current_user.UserID)
+    return user

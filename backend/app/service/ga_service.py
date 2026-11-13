@@ -1,5 +1,6 @@
 from datetime import datetime, date, timedelta
 import calendar
+import math
 import statistics
 
 from fastapi import HTTPException, status
@@ -102,6 +103,9 @@ class Assignment:
 
 
 class DBMgr:
+	WEEKDAY_SHIFT_MINUTES = 480
+	SATURDAY_SHIFT_MINUTES = 300
+	
 	def __init__(self, db: Session, zone_id: int, schedule_date: datetime):
 		self._db = db
 		self._zone_id = zone_id
@@ -140,43 +144,56 @@ class DBMgr:
 	# Return completed assignments dictionary
 	def select_assignments(self, frequency_type):
 		if frequency_type == 'weekly':
-			week_start = self._schedule_date - timedelta(days=self._schedule_date.weekday())
-			week_end = week_start + timedelta(days=5)
+			range_start = self._schedule_date - timedelta(days=self._schedule_date.weekday())
+			range_end = range_start + timedelta(days=6)
 		elif frequency_type == 'monthly':
-			week_start = None
-			week_end = None
-			month_start = self._schedule_date.replace(day=1)
-			month_end = self._schedule_date.replace(day=calendar.monthrange(self._schedule_date.year, self._schedule_date.month)[1])
+			range_start = self._schedule_date.replace(day=1)
+			range_end = self._schedule_date.replace(
+				day=calendar.monthrange(self._schedule_date.year, self._schedule_date.month)[1]
+			)
 		else:
 			return {}
-		
-		assignments = self._db.query(models.Assignment, models.TaskGroupTask.FrequencyValue) \
-		.join(models.GASchedule, models.Assignment.ScheduleID == models.GASchedule.ScheduleID) \
-		.join(models.Space, models.Assignment.SpaceID == models.Space.SpaceID) \
-		.join(models.Floor, models.Space.FloorID == models.Floor.FloorID) \
-		.join(models.Block, models.Floor.BlockID == models.Block.BlockID) \
-		.join(models.Building, models.Block.BuildingID == models.Building.BuildingID) \
-		.join(models.Task, models.Assignment.TaskID == models.Task.TaskID) \
-		.join(models.TaskGroup, models.Space.TaskGroupID == models.TaskGroup.TaskGroupID) \
-		.join(models.TaskGroupTask, and_( models.TaskGroup.TaskGroupID == models.TaskGroupTask.TaskGroupID, models.Task.TaskID == models.TaskGroupTask.TaskID)) \
-		.filter(
-			models.Building.ZoneID == self._zone_id,
-			models.Assignment.Status == "Completed",
-			models.GASchedule.ScheduleDate >= ( week_start if frequency_type == 'weekly' else month_start ),
-			models.GASchedule.ScheduleDate <= ( week_end if frequency_type == 'weekly' else month_end ),
-			models.TaskGroupTask.FrequencyType == frequency_type.title()
-		).all()
+
+		rows = (
+			self._db.query(
+				models.Assignment.SpaceID,
+				models.Assignment.TaskID,
+				models.TaskGroupTask.FrequencyValue,
+				models.GASchedule.ScheduleDate,
+			)
+			.join(models.GASchedule, models.Assignment.ScheduleID == models.GASchedule.ScheduleID)
+			.join(models.Space, models.Assignment.SpaceID == models.Space.SpaceID)
+			.join(models.Floor, models.Space.FloorID == models.Floor.FloorID)
+			.join(models.Block, models.Floor.BlockID == models.Block.BlockID)
+			.join(models.Building, models.Block.BuildingID == models.Building.BuildingID)
+			.join(models.Task, models.Assignment.TaskID == models.Task.TaskID)
+			.join(models.TaskGroup, models.Space.TaskGroupID == models.TaskGroup.TaskGroupID)
+			.join(
+				models.TaskGroupTask,
+				and_(
+					models.TaskGroup.TaskGroupID == models.TaskGroupTask.TaskGroupID,
+					models.Task.TaskID == models.TaskGroupTask.TaskID,
+				),
+			)
+			.filter(
+				models.Building.ZoneID == self._zone_id,
+				models.Assignment.Status == "Completed",
+				models.GASchedule.ScheduleDate >= range_start,
+				models.GASchedule.ScheduleDate <= range_end,
+				models.TaskGroupTask.FrequencyType == frequency_type.title(),
+			)
+			.all()
+		)
 
 		completed = {}
-		for assignment, frequency_value in assignments:
-			period = self.get_periods(frequency_type, frequency_value)
-			if period is None: continue
+		for space_id, task_id, frequency_value, completed_date in rows:
+			# Pass completed_date so Period 1 completions don't mark Period 2 as done.
+			period = self.get_periods(frequency_type, frequency_value or 1, ref_date=completed_date)
+			if period is None:
+				continue
+			key = (space_id, task_id)
+			completed.setdefault(key, set()).add(period)
 
-			period_start, period_end = period
-			key = (assignment.SpaceID, assignment.TaskID)
-
-			if key not in completed: completed[key] = []
-			completed[key].append((period_start, period_end))
 		return completed
 
 	# Get history of assigment's durations
@@ -191,7 +208,7 @@ class DBMgr:
             models.Assignment.StartTime,
             models.Assignment.EndTime,
             models.GASchedule.ScheduleDate,
-        ) \
+    	) \
         .join(models.GASchedule, models.Assignment.ScheduleID == models.GASchedule.ScheduleID) \
         .join(models.Space, models.Assignment.SpaceID == models.Space.SpaceID) \
         .join(models.Floor, models.Space.FloorID == models.Floor.FloorID) \
@@ -204,7 +221,7 @@ class DBMgr:
             models.Assignment.EndTime.isnot(None),
             models.GASchedule.ScheduleDate >= window_start,
             models.GASchedule.ScheduleDate <= self._schedule_date,
-        ).all()
+    	).all()
 
 		history = {}
 		for space_id, task_id, start_time, end_time, schedule_date in rows:
@@ -219,33 +236,121 @@ class DBMgr:
 
 		return history
 
+	# Return (is_due, days_left_in_period) so we can pace periodic tasks
+	def get_task_due_info(self, space_id, task_id, tgt):
+		frequency_type = (tgt.FrequencyType or "").strip().lower()
+		frequency_value = tgt.FrequencyValue or 1
+
+		if frequency_type == "on demand":
+			return False, None
+		if frequency_type == "daily":
+			return True, 0  # 0 days left = Mandatory Today
+
+		period_start, period_end = self.get_periods(frequency_type, frequency_value)
+		if not period_start or not period_end:
+			return False, None
+
+		if frequency_type == "weekly":
+			completed_periods = self._weekly_completed.get((space_id, task_id), set())
+		elif frequency_type == "monthly":
+			completed_periods = self._monthly_completed.get((space_id, task_id), set())
+		else:
+			return False, None
+
+		is_due = (period_start, period_end) not in completed_periods
+		if not is_due:
+			return False, None
+
+		# Calculate how many days remain in this period (0 means today is the last day!)
+		days_left = max(0, (period_end - self._schedule_date).days)
+		return True, days_left
+
 
 	def select_spacetasks(self):
-		spacetasks = self._db.query(models.Space, models.Task, models.TaskGroupTask) \
-		.join(models.Floor, models.Floor.FloorID == models.Space.FloorID, isouter=True) \
-		.join(models.Block, models.Floor.BlockID == models.Block.BlockID, isouter=True) \
-		.join(models.Building, models.Block.BuildingID == models.Building.BuildingID, isouter=True) \
-		.join(models.TaskGroup, models.Space.TaskGroupID == models.TaskGroup.TaskGroupID, isouter=True) \
-		.join(models.TaskGroupTask, models.TaskGroup.TaskGroupID == models.TaskGroupTask.TaskGroupID, isouter=True) \
-		.join(models.Task, models.TaskGroupTask.TaskID == models.Task.TaskID) \
-		.filter(
-			models.Building.ZoneID == self._zone_id,
-			models.Space.IsActive == True,
-			models.Task.IsActive == True,
-			models.TaskGroupTask.IsActive == True,
-			models.Space.TaskGroupID != None
-		).all()
+		spacetasks = (
+			self._db.query(models.Space, models.Task, models.TaskGroupTask)
+			.join(models.Floor, models.Floor.FloorID == models.Space.FloorID, isouter=True)
+			.join(models.Block, models.Floor.BlockID == models.Block.BlockID, isouter=True)
+			.join(models.Building, models.Block.BuildingID == models.Building.BuildingID, isouter=True)
+			.join(models.TaskGroup, models.Space.TaskGroupID == models.TaskGroup.TaskGroupID, isouter=True)
+			.join(models.TaskGroupTask, models.TaskGroup.TaskGroupID == models.TaskGroupTask.TaskGroupID, isouter=True)
+			.join(models.Task, models.TaskGroupTask.TaskID == models.Task.TaskID)
+			.filter(
+				models.Building.ZoneID == self._zone_id,
+				models.Space.IsActive == True,
+				models.Task.IsActive == True,
+				models.TaskGroupTask.IsActive == True,
+				models.Space.TaskGroupID != None,
+			)
+			.all()
+		)
 
-		returnSpaceTasks = []
-		for space, task, taskGroupTask in spacetasks:
-			if self.is_task_due(space.SpaceID, task.TaskID, taskGroupTask):
-				space_obj = Space(space.SpaceID, space.SpaceCode, space.SpaceName, space.SpaceType, space.FloorID, space.SpaceDescription, space.SpaceArea, space.SpaceEPU, space.TaskGroupID)
+		# List of tuples: (days_left, space_id, SpaceTask)
+		flexible_spacetasks = []
+		mandatory_spacetasks = []
 
-				history = self._duration_history.get((space.SpaceID, task.TaskID), [])
-				estimated_duration = self.estimate_duration(space_obj, task, history)
+		# Track available minutes per cleaner category so we never exceed category capacity
+		available_mins_by_cat = {}
+		for c in self._cleaners:
+			cat = c.get_category()
+			available_mins_by_cat[cat] = available_mins_by_cat.get(cat, 0) + self.get_max_shift_minutes()
 
-				returnSpaceTasks.append( SpaceTask(space_obj, Task(task.TaskID, task.TaskName, task.TaskType, task.RequiredCategory, task.DurationBasis, task.DurationValue), taskGroupTask.Slot, estimated_duration) )
-		return returnSpaceTasks
+		for space, task, tgt in spacetasks:
+			is_due, days_left = self.get_task_due_info(space.SpaceID, task.TaskID, tgt)
+			if not is_due:
+				continue
+
+			space_obj = Space(
+				space.SpaceID, space.SpaceCode, space.SpaceName, space.SpaceType,
+				space.FloorID, space.SpaceDescription, space.SpaceArea, space.SpaceEPU, space.TaskGroupID
+			)
+			task_obj = Task(
+				task.TaskID, task.TaskName, task.TaskType,
+				task.RequiredCategory, task.DurationBasis, task.DurationValue
+			)
+			history = self._duration_history.get((space.SpaceID, task.TaskID), [])
+			estimated_duration = self.estimate_duration(space_obj, task, history)
+			st_obj = SpaceTask(space_obj, task_obj, tgt.Slot, estimated_duration)
+
+			# Daily tasks OR periodic tasks on the LAST day of their period are mandatory today
+			if days_left == 0:
+				mandatory_spacetasks.append(st_obj)
+				req_cat = task.RequiredCategory
+				if req_cat in available_mins_by_cat:
+					available_mins_by_cat[req_cat] -= estimated_duration
+			else:
+				flexible_spacetasks.append((days_left, space.FloorID, space.SpaceID, st_obj))
+
+		# Sort flexible tasks by urgency (fewest days_left first), then group by FloorID & SpaceID
+		flexible_spacetasks.sort(key=lambda x: (x[0], x[1], x[2]))
+
+		# Take a proportional daily slice of periodic tasks, capped by remaining cleaner minutes
+		# Group by days_left so we take ~1/(days_left + 1) of each period bucket per day
+		selected_flexible = []
+		bucket_counts = {}
+		for days_left, _, _, _ in flexible_spacetasks:
+			bucket_counts[days_left] = bucket_counts.get(days_left, 0) + 1
+
+		bucket_quotas = {
+			days_left: math.ceil(count / (days_left + 1))
+			for days_left, count in bucket_counts.items()
+		}
+		bucket_taken = {days_left: 0 for days_left in bucket_counts}
+
+		for days_left, _, _, st_obj in flexible_spacetasks:
+			req_cat = st_obj.get_task().get_required_category()
+			duration = st_obj.get_estimated_duration()
+
+			# Check both the daily pacing quota AND remaining cleaner shift capacity
+			if (
+				bucket_taken[days_left] < bucket_quotas[days_left]
+				and available_mins_by_cat.get(req_cat, 0) >= duration
+			):
+				selected_flexible.append(st_obj)
+				bucket_taken[days_left] += 1
+				available_mins_by_cat[req_cat] -= duration
+
+		return mandatory_spacetasks + selected_flexible
 
 
 	WEEKLY_PERIODS = {
@@ -259,18 +364,22 @@ class DBMgr:
 		3: [(1, 10), (11, 20), (21, "last")]
 	}
 
-	def get_periods(self, frequency_type, frequency_value):
+	def get_periods(self, frequency_type, frequency_value, ref_date=None):
+		target_date = ref_date or self._schedule_date
 		period_start = period_end = None
+
 		if frequency_type == "weekly":
 			periods = self.WEEKLY_PERIODS.get(frequency_value)
 			if not periods:
 				raise HTTPException(
 					status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-					detail={"code": "UNSUPPORTED_FREQUENCY_VALUE",
-							"message": f"Weekly FrequencyValue={frequency_value} has no defined period split (only 1-3 supported)"}
+					detail={
+						"code": "UNSUPPORTED_FREQUENCY_VALUE",
+						"message": f"Weekly FrequencyValue={frequency_value} has no defined period split (only 1-3 supported)"
+					}
 				)
-			weekday = self._schedule_date.weekday()
-			week_start = self._schedule_date - timedelta(days=weekday)
+			weekday = target_date.weekday()
+			week_start = target_date - timedelta(days=weekday)
 			for start_day, end_day in periods:
 				if start_day <= weekday <= end_day:
 					period_start = week_start + timedelta(days=start_day)
@@ -282,26 +391,29 @@ class DBMgr:
 			if not periods:
 				raise HTTPException(
 					status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-					detail={"code": "UNSUPPORTED_FREQUENCY_VALUE",
-							"message": f"Monthly FrequencyValue={frequency_value} has no defined period split (only 1-3 supported)"}
+					detail={
+						"code": "UNSUPPORTED_FREQUENCY_VALUE",
+						"message": f"Monthly FrequencyValue={frequency_value} has no defined period split (only 1-3 supported)"
+					}
 				)
-			current_day = self._schedule_date.day
-			total_days = calendar.monthrange(self._schedule_date.year, self._schedule_date.month)[1]
+			current_day = target_date.day
+			total_days = calendar.monthrange(target_date.year, target_date.month)[1]
 			for start_day, end_day in periods:
-				if end_day == "last": end_day = total_days
+				if end_day == "last":
+					end_day = total_days
 				if start_day <= current_day <= end_day:
-					period_start = self._schedule_date.replace(day=start_day)
-					period_end = self._schedule_date.replace(day=end_day)
+					period_start = target_date.replace(day=start_day)
+					period_end = target_date.replace(day=end_day)
 					break
-
 		else:
 			raise HTTPException(
 				status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-				detail={"code": "UNSUPPORTED_FREQUENCY_TYPE",
-						"message": f"FrequencyType '{frequency_type}' is not supported "
-								f"(Daily / Weekly / Monthly / On Demand only)"}
+				detail={
+					"code": "UNSUPPORTED_FREQUENCY_TYPE",
+					"message": f"FrequencyType '{frequency_type}' is not supported"
+				}
 			)
-		
+
 		return period_start, period_end
 
 
@@ -343,10 +455,11 @@ class DBMgr:
 		floor = self.MIN_DURATION_BY_TASK_TYPE.get(task.TaskType, 3)
 		return round(max(estimate, floor))
 
+	def get_max_shift_minutes(self): return self.SATURDAY_SHIFT_MINUTES if self._schedule_date.weekday() == 5 else self.WEEKDAY_SHIFT_MINUTES
+
 	def get_cleaners_by_category(self, category): return [c for c in self._cleaners if c.get_category() == category]
 
 	def get_schedule_date(self): return self._schedule_date
-	def get_spaces(self): return self._spaces
 	def get_cleaners(self): return self._cleaners
 	def get_spacetasks(self): return self._spacetasks
 	def get_numberOfTasks(self): return self._numberOfTasks

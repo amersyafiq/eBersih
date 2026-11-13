@@ -19,3 +19,13 @@ def get_users(db):
             joinedload(User.company)
         ).all() 
     return users
+
+
+def get_user(db, user_id):
+    user = db.query(User).options(
+            joinedload(User.zone),
+            joinedload(User.company)
+        ).filter(
+            User.UserID == user_id
+        ).first()
+    return user

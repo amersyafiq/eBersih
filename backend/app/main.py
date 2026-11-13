@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .routers import auth, ga, user, facility, cleaner, contractor, task, report
+from .routers import auth, ga, user, facility, cleaner, contractor, task, report, live
 
 origins = ['*']
 
@@ -22,6 +22,7 @@ app.include_router(contractor.router)
 app.include_router(task.router)
 app.include_router(report.router)
 app.include_router(ga.router)
+app.include_router(live.router)
 
 @app.get("/")
 async def root():

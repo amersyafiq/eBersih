@@ -1,11 +1,5 @@
-import { Text, View, StyleSheet } from "react-native";
+import { Redirect } from "expo-router";
 
-export default function Index() {
-  return (
-    <View className="flex-1 items-center justify-center bg-white">
-      <Text className="text-xl font-bold text-blue-500">
-        Hello World!
-      </Text>
-    </View>
-  );
+export default function HomeScreen() {
+    return <Redirect href="/onboarding" />;
 }

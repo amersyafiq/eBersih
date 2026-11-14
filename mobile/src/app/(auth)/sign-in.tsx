@@ -8,7 +8,6 @@ import React from 'react';
 import { View, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-const ebersihLogo = require('@/assets/icons/eBERSIH_logo.svg');
 const ebersihText = require('@/assets/icons/eBERSIH_text.svg');
 
 export default function SignInScreen() {

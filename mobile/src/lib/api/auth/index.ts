@@ -17,7 +17,7 @@ export function useLogin() {
             }),
 
         onSuccess: async (data) => {
-            await saveSession(data.access_token, data.refresh_token, data.role);
+            await saveSession(data.access_token, data.refresh_token);
             queryClient.invalidateQueries({ queryKey: ["currentUser"] });
             router.replace('/(tabs)');
         },

@@ -4,6 +4,7 @@ import { Button } from "panelui-native/components/button";
 import { createForm } from "panelui-native/components/form";
 import { Input } from "panelui-native/components/input";
 import { useLogin } from "@/src/lib/api/auth";
+import { Alert, useToast } from "panelui-native";
 
 type SignInValues = {
     email: string;
@@ -14,10 +15,18 @@ const SignInForm = createForm<SignInValues>();
 
 export function SignIn() {
     const { mutate: login, isPending, error } = useLogin();
-    
+    const { toast } = useToast();
+
     const form = SignInForm.useForm({
         defaultValues: { email: '', password: '' },
-        onSubmit: async (values) => login(values),
+        onSubmit: (values) => {
+            login(values);
+            toast.show({
+                variant: 'success',
+                label: 'Welcome back',
+                description: 'Logged in successfully',
+            })
+        },
     });
 
     return (
@@ -45,7 +54,7 @@ export function SignIn() {
                 <SignInForm.Field
                     name="password"
                     validateOn="change"
-                    validate={(value) => (value.length >= 8 ? undefined : 'At least 8 characters')}
+                    validate={(value) => (value.length >= 6 ? undefined : 'At least 6 characters')}
                 >
                     {(field) => (
                         <Input
@@ -64,6 +73,10 @@ export function SignIn() {
                 <Pressable className="self-end" onPress={() => console.log('Forgot password')}>
                     <Text className="text-xs font-semibold text-[#5750f1]">Forgot Password?</Text>
                 </Pressable>
+
+                {error && (
+                    <Alert variant="destructive" title="Sign In Failed" description={error.message} />
+                )}
 
                 <Button
                     size="lg"

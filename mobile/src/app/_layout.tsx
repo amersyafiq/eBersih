@@ -58,7 +58,7 @@ function ThemedNavigation() {
 
   return (
     <ThemeProvider value={navigationTheme}>
-      <Stack screenOptions={{ headerShown: true }} />
+      <Stack screenOptions={{ headerShown: false }} />
       {/* Not style="auto": that reads the OS appearance, which is left
           unspecified for the named themes. */}
       <StatusBar style={mode === 'dark' ? 'light' : 'dark'} />

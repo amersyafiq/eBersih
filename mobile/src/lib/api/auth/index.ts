@@ -4,6 +4,10 @@ import { useRouter } from 'expo-router';
 import { apiClient } from '../client';
 import { saveSession, clearSession, getAccessToken, } from '@/src/lib/api/secure-token';
 import { CurrentUserProps, LoginPayload, LoginResponse } from './types';
+import { useToast } from 'panelui-native';
+
+const { toast } = useToast();
+
 
 export function useLogin() {
     const queryClient = useQueryClient();
@@ -19,7 +23,19 @@ export function useLogin() {
         onSuccess: async (data) => {
             await saveSession(data.access_token, data.refresh_token);
             queryClient.invalidateQueries({ queryKey: ["currentUser"] });
+            toast.show({
+                variant: 'success',
+                label: 'Welcome back',
+                description: 'Logged in successfully',
+            })
             router.replace('/(tabs)');
+        },
+        onError: (error) => {
+            toast.show({
+                variant: 'destructive',
+                label: 'Login failed',
+                description: 'Please try again.',
+            })
         },
     });
 }
@@ -28,9 +44,7 @@ export function useCurrentUser() {
     return useQuery({
         queryKey: ["currentUser"],
         queryFn: async ({ signal }) => {
-            const token = await getAccessToken();
-            if (!token) return null;
-            return apiClient<CurrentUserProps>('/auth/me', { signal });
+            return apiClient<CurrentUserProps>('/user/me', { signal });
         },
         staleTime: 1000 * 60 * 5,
     });
@@ -43,6 +57,6 @@ export function useLogout() {
     return async () => {
         await clearSession();
         queryClient.clear();
-        router.replace('/(auth)/sign-in');
+        router.replace('/onboarding');
     };
 }

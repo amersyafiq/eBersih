@@ -1,12 +1,13 @@
 import { useRouter } from 'expo-router';
 import React, { useCallback } from 'react';
-import { useWindowDimensions, View, Text } from 'react-native';
+import { useWindowDimensions, View } from 'react-native';
 import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { LinearGradient } from 'expo-linear-gradient';
 import { withUniwind } from 'uniwind';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { Text } from 'panelui-native';
 import Animated, {
     useSharedValue,
     useAnimatedStyle,

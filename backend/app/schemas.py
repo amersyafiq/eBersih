@@ -1,5 +1,5 @@
 from __future__ import annotations
-from datetime import datetime, time
+from datetime import date, datetime, time
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, StrictBool, model_validator
 from typing import List, Literal, Optional, Annotated
 
@@ -335,3 +335,18 @@ class ContractorCreate(BaseModel):
     companyName: str
     companyPhone: str
     selectedZones: List[str]
+
+# =====================CLEANER=========================
+class CleanerStats(BaseModel):
+    taskCompleted: int
+
+class CleanerSchedules(BaseModel):
+    ScheduleDate: date
+    ZoneCode: Optional[str]
+    isToday: bool
+    isAttended: bool
+    taskCount: int
+    spaceCount: int
+
+    class Config:
+        from_attributes = True

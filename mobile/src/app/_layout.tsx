@@ -11,6 +11,7 @@ import { Uniwind, useCSSVariable } from 'uniwind';
 import { PanelUIProvider, useThemeMode } from 'panelui-native';
 import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
 import { setOnSessionExpired } from '@/src/lib/api/client';
+import { useReactQueryDevTools } from '@dev-plugins/react-query';
 
 const queryClient = new QueryClient({
     defaultOptions: {
@@ -33,7 +34,8 @@ const queryClient = new QueryClient({
 function ThemedNavigation() {
     const router = useRouter();
     const qc = useQueryClient();
-    const { mode } = useThemeMode();
+    const theme = useThemeMode();
+    const { mode } = theme;
 
     const [background, card, text, border, primary] = useCSSVariable([
         '--color-background',
@@ -64,6 +66,16 @@ function ThemedNavigation() {
         });
     }, [qc, router]);
 
+    useEffect(() => {
+        if (mode === 'dark') {
+            if ('setMode' in theme && typeof (theme as any).setMode === 'function') {
+                (theme as any).setMode('light');
+            } else if (typeof theme.toggleMode === 'function') {
+                theme.toggleMode();
+            }
+        }
+    }, []);
+
     const base = mode === 'dark' ? DarkTheme : DefaultTheme;
     const navigationTheme = {
         ...base,
@@ -89,11 +101,8 @@ function ThemedNavigation() {
 }
 
 export default function RootLayout() {
-    const { setMode } = useThemeMode();
+    useReactQueryDevTools(queryClient);
 
-    useEffect(() => {
-        setMode('light'); // Forces default theme mode to light
-    }, []);
     return (
         <SafeAreaProvider>
             <QueryClientProvider client={queryClient}>

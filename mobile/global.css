@@ -6,16 +6,3 @@
    the package rather than in this project — without this line every one of
    them renders unstyled, which reads like a broken install. */
 @source './node_modules/panelui-native/src';
-
-@theme {
-  --animate-flicker: flicker 1.5s infinite alternate;
-
-  @keyframes flicker {
-    0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% {
-      opacity: 1;
-    }
-    20%, 24%, 55% {
-      opacity: 0.2;
-    }
-  }
-}

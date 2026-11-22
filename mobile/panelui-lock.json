@@ -1,0 +1,84 @@
+{
+  "version": 2,
+  "files": {
+    "src/components/ui/button.tsx": {
+      "item": "button",
+      "digest": "sha256:0e0ab9fe9f6b0785ff59149a8604bd0078865ff0ff540eb967cb8d46118be760"
+    },
+    "src/components/ui/animated-pressable.tsx": {
+      "item": "animated-pressable",
+      "digest": "sha256:3b026e49dd246390496607eca7a6f8ebeb43fe888ab2a2673401e39ea0726973"
+    },
+    "src/components/ui/refs.ts": {
+      "item": "refs",
+      "digest": "sha256:a0133f298e05bdb5632304b3916f9970da4cda80dc9c932223b171fc83b73166"
+    },
+    "src/lib/cn.ts": {
+      "item": "cn",
+      "digest": "sha256:9304a861c8673bee09e0f12de31773abbde503b02e59dfd74763ddec2e37cf05"
+    },
+    "src/components/ui/icons.tsx": {
+      "item": "icons",
+      "digest": "sha256:542b0d8be06a8ec468eaa72fd6538608b0af4c4eddccb744fd91b1c0873db251"
+    },
+    "src/hooks/use-direction.ts": {
+      "item": "use-direction",
+      "digest": "sha256:9202d8550abaed8720af42d0320acf51e227fbf23f649b5636fd26475b849867"
+    },
+    "src/lib/native.ts": {
+      "item": "native",
+      "digest": "sha256:5cd8ce1c54c767f2b890739b7464b6f73cf915cd74062ce18b8fa37e2435fe57"
+    },
+    "src/lib/native-host.tsx": {
+      "item": "native",
+      "digest": "sha256:5dd60dff5d68da42cd2de01bd45709cb320be5486d998c3e366e273a81f0a105"
+    },
+    "src/hooks/use-theme.ts": {
+      "item": "use-theme",
+      "digest": "sha256:41472f2135c4835265c545c4f85fe4aed8d68b6243185ff8872b2652193ba16d"
+    },
+    "src/components/ui/spinner.tsx": {
+      "item": "spinner",
+      "digest": "sha256:0cabd59ba126afb9f4721001e55e8fa87ab5f1f93e0062b83a1ae490b3c0aa4f"
+    },
+    "src/components/ui/text.tsx": {
+      "item": "text",
+      "digest": "sha256:6dc4a0f5e4be427ebea56d9da552240ac47cce1302b6df18574fe75eccbc01f4"
+    },
+    "src/components/ui/form.tsx": {
+      "item": "form",
+      "digest": "sha256:903cb4ce16c5ce9555899cdc7c00c75b5eb5ae1858a2359da7bb29fcf2647bc0"
+    },
+    "src/components/ui/typed-form.ts": {
+      "item": "form",
+      "digest": "sha256:580f53e59e30ee40349bbcc052b4f53d9fa039bb02523156711bc0d45dc99089"
+    },
+    "src/components/ui/use-field.ts": {
+      "item": "form",
+      "digest": "sha256:3047a2f243d09132984c3bad11a611ca4efdab89ea2f1d740f32141a8d23f864"
+    },
+    "src/components/ui/use-form.ts": {
+      "item": "form",
+      "digest": "sha256:cb93cb937e8a47a65127693269638b9e8c8240af90f54be3d727955c9a81463d"
+    }
+  },
+  "roots": {
+    "button": [
+      "button",
+      "animated-pressable",
+      "refs",
+      "cn",
+      "icons",
+      "use-direction",
+      "native",
+      "use-theme",
+      "spinner",
+      "text"
+    ],
+    "form": [
+      "form"
+    ]
+  },
+  "legacyFiles": [],
+  "registry": "https://panelui.dev/r"
+}

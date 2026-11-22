@@ -1,60 +1,79 @@
-import { Image, View } from 'react-native';
+import { ScheduleCarousel } from '@/src/components/home/home-carousel';
+import { HomeStats } from '@/src/components/home/home-grid';
+import { ShiftStatusPill } from '@/src/components/home/home-time';
+import { SoftBackground } from '@/src/components/ui/soft-background';
+import { useCurrentUser } from '@/src/lib/api/auth';
+import { useRouter } from 'expo-router';
+import { Avatar, Badge, BookmarkIcon, Button, Card, Carousel, Drawer, GridItem, Item, MenuIcon, Separator, Text } from 'panelui-native';
+import React from 'react';
+import { ScrollView, TouchableNativeFeedback, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Text, useThemeMode } from 'panelui-native';
+import { useCSSVariable } from 'uniwind';
 
-/**
- * The landing screen — the one you delete first.
- *
- * It says three things and stops: what this is, that it is running, and the
- * one command that adds the next thing. A starter that opens on a dashboard
- * of invented numbers looks impressive and teaches nothing, and every line of
- * it is a line to remove before any real work begins.
- */
+const TXT = 'text-gray-900 dark:text-gray-100';
+const ebersihLogo = require('@/assets/icons/eBERSIH_logo.svg');
+
 export default function HomeScreen() {
-  const insets = useSafeAreaInsets();
-  const { mode } = useThemeMode();
+    const [tint, mute, background] = useCSSVariable([
+        '--color-primary',
+        '--color-muted-foreground',
+        '--color-card',
+    ]) as (string | undefined)[];
 
-  return (
-    <View
-      className="flex-1 items-center justify-center gap-8 bg-background px-8"
-      style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}
-    >
-      {/* Two files rather than one tinted image: the mark carries a glow, and
-          a glow does not survive being recoloured. */}
-      <Image
-        source={
-          mode === 'dark'
-            ? require('@/assets/logo-dark.png')
-            : require('@/assets/logo-light.png')
-        }
-        style={{ width: 132, height: 132 }}
-        resizeMode="contain"
-        accessibilityLabel="PanelUI"
-      />
+    const insets = useSafeAreaInsets();
+    const router = useRouter();
+    const { data: user } = useCurrentUser();
 
-      <View className="items-center gap-2">
-        <Text size="3xl" weight="bold">
-          PanelUI
-        </Text>
-        <Text muted className="text-center">
-          Edit{' '}
-          <Text muted className="font-mono">
-            app/(tabs)/index.tsx
-          </Text>{' '}
-          and save to reload.
-        </Text>
-      </View>
+    const firstName = user?.Fullname?.split(' ')[0];
 
-      <View className="items-center gap-1">
-        <Text size="sm" muted>
-          Add a component
-        </Text>
-        <View className="rounded-xl border border-border bg-surface px-4 py-2.5">
-          <Text size="sm" className="font-mono">
-            npx panelui-cli@latest add dialog
-          </Text>
-        </View>
-      </View>
-    </View>
-  );
+    return (
+        <SoftBackground className="flex-1" style={{ paddingTop: insets.top }}>
+            <ScrollView
+                className="flex-1"
+                contentContainerStyle={{ paddingTop: 16, paddingBottom: 40, gap: 16 }}
+            >
+                <View className="flex-row items-center justify-between px-5">
+                    <View className="flex-1 flex-row gap-1">
+                        <Drawer>
+                            <Drawer.Trigger>
+                                <Button variant="outline" className="shadow-none border-border rounded-full h-14 min-w-14 w-fit px-4.5" size="lg"><MenuIcon size={20} /></Button>
+                            </Drawer.Trigger>
+                            <Drawer.Content>
+                                <Drawer.Header title="Workspace" description="Switch project or manage members." />
+                                <Drawer.Body>
+                                    {['Projects', 'Members', 'Billing'].map((label) => (
+                                        <Item key={label}>
+                                            <Item.Content>
+                                                <Item.Title>{label}</Item.Title>
+                                            </Item.Content>
+                                        </Item>
+                                    ))}
+                                </Drawer.Body>
+                                <Drawer.Footer>
+                                    <Drawer.Close>
+                                        <Button variant="outline" className="flex-1">Close</Button>
+                                    </Drawer.Close>
+                                </Drawer.Footer>
+                            </Drawer.Content>
+                        </Drawer>
+
+                        <ShiftStatusPill />
+                    </View>
+
+                    <TouchableNativeFeedback onPress={() => router.navigate('/(tabs)/profile')}>
+                        <Avatar fallback={user?.Fullname?.charAt(0) ?? '?'} size="lg" style={{ backgroundColor: background }} />
+                    </TouchableNativeFeedback>
+                </View>
+
+                <View className="flex-1 mt-4 px-5">
+                    <Text size="xl">Hai 👋, {user?.Fullname?.split(' ')[0] ?? 'User'}</Text>
+                    <Text weight="bold" className="text-3xl leading-none mt-2 ">Sistem Pengurusan Pembersihan Fasiliti</Text>
+                </View>
+
+                <HomeStats />
+
+                <ScheduleCarousel />
+            </ScrollView>
+        </SoftBackground>
+    );
 }

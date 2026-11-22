@@ -1,163 +1,155 @@
-// src/app/(auth)/onboarding.tsx
-import React, { useRef, useState } from 'react';
-import {
-  View,
-  Text,
-  FlatList,
-  useWindowDimensions,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import * as SecureStore from 'expo-secure-store';
-import {
-  Button,
-  Card,
-  Badge,
-  ChevronRightIcon,
-} from 'panelui-native';
+import React, { useCallback } from 'react';
+import { useWindowDimensions, View } from 'react-native';
+import { Image } from 'expo-image';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useVideoPlayer, VideoView } from 'expo-video';
+import { LinearGradient } from 'expo-linear-gradient';
+import { withUniwind } from 'uniwind';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { Text } from 'panelui-native';
+import Animated, {
+    useSharedValue,
+    useAnimatedStyle,
+    withSpring,
+    withTiming,
+    interpolate,
+    Extrapolation,
+} from 'react-native-reanimated';
+import { scheduleOnRN } from 'react-native-worklets';
 
-interface OnboardingSlide {
-  id: string;
-  badge: string;
-  title: string;
-  description: string;
-  highlight: string;
-}
+const StyledLinearGradient = withUniwind(LinearGradient);
+const StyledVideoView = withUniwind(VideoView);
 
-const SLIDES: OnboardingSlide[] = [
-  {
-    id: 'schedule',
-    badge: 'Smart Scheduling',
-    title: 'Your Daily Campus Tasks, Optimized',
-    description:
-      'View your assigned spaces grouped clearly by building, floor, and time slot—tailored for Pekerja Am, Operator Mesin, and Penyelia.',
-    highlight: 'Auto-refreshes when your shift starts',
-  },
-  {
-    id: 'qr-scan',
-    badge: 'QR Verification',
-    title: 'Scan Room QR to Start & Complete',
-    description:
-      'Point your camera at the space QR code on the door to log start and completion timestamps in one tap.',
-    highlight: 'Fast camera scan with torch support',
-  },
-  {
-    id: 'quality-leave',
-    badge: 'Attendance & Ratings',
-    title: 'Clock In, Apply Leave & Track Quality',
-    description:
-      'Manage daily clock-in/out, submit medical or annual leave requests, and submit 1–3 cleanliness inspections seamlessly.',
-    highlight: 'All workforce tools in one place',
-  },
-];
+const videoSource = require('@/assets/video/bg_vid.mp4');
+const ebersihLogo = require('@/assets/icons/eBERSIH_logo.svg');
+const ebersihText = require('@/assets/icons/eBERSIH_text.svg');
 
 export default function OnboardingScreen() {
-  const router = useRouter();
-  const { width } = useWindowDimensions(); // Responsive width (handles rotation & foldables)
-  const flatListRef = useRef<FlatList<OnboardingSlide>>(null);
-  const [activeIndex, setActiveIndex] = useState(0);
+    const router = useRouter();
+    const { height } = useWindowDimensions();
+    const insets = useSafeAreaInsets();
 
-  const isLastSlide = activeIndex === SLIDES.length - 1;
+    // Match your original h-5/7 starting height, and collapse down to 22% on swipe-up
+    const INITIAL_TOP_HEIGHT = height * (5 / 7);
+    const COLLAPSED_TOP_HEIGHT = height * 0.22;
+    const SWIPE_DISTANCE = INITIAL_TOP_HEIGHT - COLLAPSED_TOP_HEIGHT;
 
-  // Track which page is visible as the user swipes (like ViewPager2.OnPageChangeCallback)
-  const onViewableItemsChanged = useRef(
-    ({ viewableItems }: { viewableItems: any[] }) => {
-      if (viewableItems.length > 0 && viewableItems[0].index !== null) {
-        setActiveIndex(viewableItems[0].index);
-      }
-    }
-  ).current;
+    const topHeight = useSharedValue(INITIAL_TOP_HEIGHT);
+    const hasNavigated = useSharedValue(false);
 
-  const finishOnboarding = async () => {
-    await SecureStore.setItemAsync('ebersih_onboarded', 'true');
-    // .replace() pops Onboarding off the back stack (like finish() in Android)
-    router.replace('/(auth)/sign-in');
-  };
+    const player = useVideoPlayer(videoSource, (player) => {
+        player.loop = true;
+        player.muted = true;
+        player.play();
+    });
 
-  const handleNext = () => {
-    if (isLastSlide) {
-      finishOnboarding();
-    } else {
-      flatListRef.current?.scrollToIndex({
-        index: activeIndex + 1,
-        animated: true,
-      });
-    }
-  };
+    const navigateToSignIn = useCallback(() => {
+        router.replace('/sign-in');
+    }, [router]);
 
-  return (
-    <SafeAreaView edges={['top', 'bottom']} className="flex-1 bg-background">
-      {/* Top Bar: Brand + Skip Action */}
-      <View className="flex-row items-center justify-between px-6 pt-2 pb-4">
-        <Text className="text-lg font-bold text-foreground">eBersih</Text>
+    const panGesture = Gesture.Pan()
+        .onUpdate((event) => {
+            if (hasNavigated.value) return;
 
-        {!isLastSlide && (
-          <Button variant="ghost" onPress={finishOnboarding}>
-            Skip
-          </Button>
-        )}
-      </View>
+            // event.translationY is negative when swiping UP
+            const nextHeight = INITIAL_TOP_HEIGHT + event.translationY;
 
-      {/* 2. Paged Horizontal FlatList (Expo's ViewPager2 equivalent) */}
-      <FlatList
-        ref={flatListRef}
-        data={SLIDES}
-        keyExtractor={(item) => item.id}
-        horizontal
-        pagingEnabled
-        bounces={false}
-        showsHorizontalScrollIndicator={false}
-        onViewableItemsChanged={onViewableItemsChanged}
-        viewabilityConfig={{ viewAreaCoveragePercentThreshold: 50 }}
-        renderItem={({ item }) => (
-          <View
-            style={{ width }}
-            className="flex-1 justify-center px-6"
-          >
-            {/* Illustration / Hero Placeholder Surface */}
-            <View className="mb-8 h-56 items-center justify-center rounded-3xl bg-muted/40 border border-border">
-              <Badge>{item.badge}</Badge>
-              <Text className="mt-3 text-sm text-muted-foreground">
-                {item.highlight}
-              </Text>
+            // Clamp between collapsed height and initial height
+            topHeight.value = Math.max(
+                COLLAPSED_TOP_HEIGHT,
+                Math.min(INITIAL_TOP_HEIGHT, nextHeight)
+            );
+        })
+        .onEnd((event) => {
+            if (hasNavigated.value) return;
+
+            // Trigger redirect if user swiped up > 100px OR flicked fast upward
+            const swipedEnough = event.translationY < -100 || event.velocityY < -500;
+
+            if (swipedEnough) {
+                hasNavigated.value = true;
+                topHeight.value = withTiming(
+                    COLLAPSED_TOP_HEIGHT,
+                    { duration: 280 },
+                    (finished) => {
+                        if (finished) {
+                            scheduleOnRN(navigateToSignIn);
+                        }
+                    }
+                );
+            } else {
+                // Snap back smoothly if they didn't swipe far enough
+                topHeight.value = withSpring(INITIAL_TOP_HEIGHT, {
+                    damping: 18,
+                    stiffness: 180,
+                });
+            }
+        });
+
+    // 1. Animates top view height (bottom flex-1 view grows automatically)
+    const topAnimatedStyle = useAnimatedStyle(() => ({
+        height: topHeight.value,
+    }));
+
+    return (
+        <GestureDetector gesture={panGesture}>
+            <View className="flex-1 bg-secondary">
+                {/* Top Hero Banner */}
+                <Animated.View
+                    style={topAnimatedStyle}
+                    className="w-full overflow-hidden rounded-bl-[3rem] rounded-br-[10rem]"
+                >
+                    <StyledVideoView
+                        player={player}
+                        className="absolute inset-0"
+                        contentFit="cover"
+                        nativeControls={false}
+                    />
+                    <StyledLinearGradient
+                        colors={['#5750f1', 'transparent']}
+                        start={{ x: 0.5, y: 0 }}
+                        end={{ x: 0.5, y: 1 }}
+                        className="absolute inset-0"
+                        pointerEvents="none"
+                    />
+
+                    <Animated.View
+                        className="items-center justify-center mt-28"
+                    >
+                        <Image
+                            source={ebersihLogo}
+                            style={{ width: 96, height: 96 }}
+                            contentFit="contain"
+                        />
+                        <Image
+                            source={ebersihText}
+                            style={{ width: 192, height: 48 }}
+                            contentFit="contain"
+                        />
+                    </Animated.View>
+                </Animated.View>
+
+                {/* Bottom Footer */}
+                <View
+                    className="flex-1 w-full justify-between items-center pt-10 px-10 gap-0"
+                    style={{ paddingBottom: insets.bottom + 24 }}
+                >
+                    <View className="flex-1 justify-center items-center">
+                        <Text className="text-3xl font-medium text-center w-3/4" style={{ marginBottom: 0 }}>
+                            Cleaning Management{'\n'}System
+                        </Text>
+                    </View>
+
+                    {/* Subtle Swipe-Up Hint */}
+                    <View className="items-center gap-2 animate-flicker">
+                        <View className="w-10 h-1.5 rounded-full bg-foreground/25" />
+                        <Text className="text-sm font-medium text-muted-foreground">
+                            Swipe up to get started
+                        </Text>
+                    </View>
+                </View>
             </View>
-
-            {/* PanelUI Compound Card */}
-            <Card>
-              <Card.Header>
-                <Card.Title>{item.title}</Card.Title>
-                <Card.Description>{item.description}</Card.Description>
-              </Card.Header>
-            </Card>
-          </View>
-        )}
-      />
-
-      {/* 3. Pinned Bottom Controls: Stepper Dots + Primary CTA */}
-      <View className="px-6 pt-4 pb-6 gap-6">
-        {/* Pagination Indicators */}
-        <View className="flex-row items-center justify-center gap-2">
-          {SLIDES.map((slide, index) => (
-            <View
-              key={slide.id}
-              className={`h-2 rounded-full ${
-                index === activeIndex
-                  ? 'w-8 bg-primary'
-                  : 'w-2 bg-muted-foreground/30'
-              }`}
-            />
-          ))}
-        </View>
-
-        {/* PanelUI Button with UI-thread press feedback */}
-        <Button
-          fullWidth
-          onPress={handleNext}
-          endContent={!isLastSlide ? <ChevronRightIcon size={16} /> : undefined}
-        >
-          {isLastSlide ? 'Get Started' : 'Next'}
-        </Button>
-      </View>
-    </SafeAreaView>
-  );
+        </GestureDetector>
+    );
 }

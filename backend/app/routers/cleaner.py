@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status, HTTPException, Response
+from fastapi import APIRouter, Depends, Query, status, HTTPException, Response
 from fastapi.security.oauth2 import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session, joinedload
 from .. import schemas, models, utils, oauth2
@@ -13,6 +13,7 @@ router = APIRouter(
 
 CONTRACTOR_ONLY = Depends(oauth2.require_role("Contractor"))
 ADMIN_CONTRACTOR = Depends(oauth2.require_role("Facility Admin", "Contractor"))
+CLEANER_ONLY = Depends(oauth2.require_role("Cleaner"))
 AUTHENTICATED = Depends(oauth2.get_current_user)
 
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.UserOut, dependencies=[ADMIN_CONTRACTOR])
@@ -36,6 +37,14 @@ def get_cleaners_operator_mesin(company_id: int | None = None, zone_id: int | No
 @router.get("/penyelia", response_model=List[schemas.UserOut], dependencies=[ADMIN_CONTRACTOR])
 def get_cleaners_penyelia(company_id: int | None = None, zone_id: int | None = None, db: Session = Depends(database.get_db)):
     return cleaner_service.get_cleaners_penyelia(db, company_id, zone_id)
+
+@router.get("/task-completed", response_model=schemas.CleanerStats, dependencies=[CLEANER_ONLY])
+def get_task_completed(db: Session = Depends(database.get_db), current_user: dict = CLEANER_ONLY):
+    return cleaner_service.get_task_completed(db, current_user.UserID)
+
+@router.get("/schedules", response_model=List[schemas.CleanerSchedules], dependencies=[CLEANER_ONLY])
+def get_cleaner_schedules(db: Session = Depends(database.get_db), limit: int = Query(default=10, ge=1, le=100), current_user: dict = CLEANER_ONLY):
+    return cleaner_service.get_cleaner_schedules(db, limit, current_user.UserID)
 
 @router.get("/{cleaner_id}", response_model=schemas.UserOut, dependencies=[ADMIN_CONTRACTOR])
 def get_cleaner(cleaner_id: int, db: Session = Depends(database.get_db)):

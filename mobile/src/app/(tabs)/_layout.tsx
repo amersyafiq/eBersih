@@ -19,36 +19,41 @@ import { useCSSVariable } from 'uniwind';
  * native on each rather than the same drawing forced onto both.
  */
 export default function TabsLayout() {
-  const [tint, icon, background] = useCSSVariable([
-    '--color-primary',
-    '--color-muted-foreground',
-    '--color-card',
-  ]) as (string | undefined)[];
+    const [tint, icon, background] = useCSSVariable([
+        '--color-primary',
+        '--color-muted-foreground',
+        '--color-card',
+    ]) as (string | undefined)[];
 
-  return (
-    <NativeTabs
-      tintColor={tint}
-      iconColor={icon}
-      backgroundColor={background}
-      labelStyle={{ color: icon }}
-    >
-      <NativeTabs.Trigger name="index">
-        <NativeTabs.Trigger.Icon sf={{ default: 'house', selected: 'house.fill' }} md="home" />
-        <NativeTabs.Trigger.Label>Home</NativeTabs.Trigger.Label>
-      </NativeTabs.Trigger>
+    return (
+        <NativeTabs
+            tintColor={tint}
+            iconColor={icon}
+            backgroundColor={background}
+            labelStyle={{ color: icon }}
+        >
+            <NativeTabs.Trigger name="index">
+                <NativeTabs.Trigger.Icon sf={{ default: 'house', selected: 'house.fill' }} md="home" />
+                <NativeTabs.Trigger.Label>Home</NativeTabs.Trigger.Label>
+            </NativeTabs.Trigger>
 
-      <NativeTabs.Trigger name="components">
-        <NativeTabs.Trigger.Icon
-          sf={{ default: 'square.grid.2x2', selected: 'square.grid.2x2.fill' }}
-          md="grid_view"
-        />
-        <NativeTabs.Trigger.Label>Components</NativeTabs.Trigger.Label>
-      </NativeTabs.Trigger>
+            <NativeTabs.Trigger name="task">
+                <NativeTabs.Trigger.Icon
+                    sf={{ default: 'square.grid.2x2', selected: 'square.grid.2x2.fill' }}
+                    md="grid_view"
+                />
+                <NativeTabs.Trigger.Label>Task</NativeTabs.Trigger.Label>
+            </NativeTabs.Trigger>
 
-      <NativeTabs.Trigger name="settings">
-        <NativeTabs.Trigger.Icon sf={{ default: 'gearshape', selected: 'gearshape.fill' }} md="settings" />
-        <NativeTabs.Trigger.Label>Settings</NativeTabs.Trigger.Label>
-      </NativeTabs.Trigger>
-    </NativeTabs>
-  );
+            <NativeTabs.Trigger name="request">
+                <NativeTabs.Trigger.Icon sf={{ default: 'doc.text', selected: 'doc.text.fill' }} md="description" />
+                <NativeTabs.Trigger.Label>Request</NativeTabs.Trigger.Label>
+            </NativeTabs.Trigger>
+
+            <NativeTabs.Trigger name="profile">
+                <NativeTabs.Trigger.Icon sf={{ default: 'gearshape', selected: 'gearshape.fill' }} md="settings" />
+                <NativeTabs.Trigger.Label>Proile</NativeTabs.Trigger.Label>
+            </NativeTabs.Trigger>
+        </NativeTabs>
+    );
 }

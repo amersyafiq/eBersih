@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, Response, status
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 
-from .. import oauth2, schemas
+from .. import oauth2, schemas, models
 from ..config import database
 from ..service import task_service
 
@@ -10,6 +10,44 @@ router = APIRouter(prefix="/task", tags=["Task Management"])
 
 ADMIN_ONLY = Depends(oauth2.require_role("Facility Admin"))
 AUTHENTICATED = Depends(oauth2.get_current_user)
+
+
+@router.get("/schedule/{date_str}", response_model=schemas.CleanerScheduleDetailResponse)
+def get_cleaner_schedule_tasks(
+    date_str: str,
+    db: Session = Depends(database.get_db),
+    current_user: models.User = AUTHENTICATED,
+):
+    return task_service.get_cleaner_schedule_tasks(db, date_str, current_user.UserID)
+
+
+@router.get("/assignment/{assign_id}", response_model=schemas.CleanerTaskItem)
+def get_cleaner_assignment(
+    assign_id: int,
+    db: Session = Depends(database.get_db),
+    current_user: models.User = AUTHENTICATED,
+):
+    return task_service.get_cleaner_assignment(db, assign_id, current_user.UserID)
+
+
+@router.patch("/assignment/{assign_id}", response_model=schemas.CleanerTaskItem)
+def update_cleaner_assignment(
+    assign_id: int,
+    data: schemas.AssignmentUpdate,
+    db: Session = Depends(database.get_db),
+    current_user: models.User = AUTHENTICATED,
+):
+    return task_service.update_cleaner_assignment(db, assign_id, current_user.UserID, data)
+
+
+@router.post("/clock-in")
+def cleaner_clock_in(
+    data: Optional[schemas.AttendanceClockIn] = None,
+    db: Session = Depends(database.get_db),
+    current_user: models.User = AUTHENTICATED,
+):
+    date_val = data.AttendanceDate if data else None
+    return task_service.cleaner_clock_in(db, current_user.UserID, date_val)
 
 
 @router.get("/", response_model=List[schemas.TaskOut], dependencies=[AUTHENTICATED])

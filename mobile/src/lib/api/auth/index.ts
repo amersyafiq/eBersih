@@ -46,7 +46,7 @@ export function useCurrentUser() {
         queryFn: async ({ signal }) => {
             return apiClient<CurrentUserProps>('/user/me', { signal });
         },
-        staleTime: 1000 * 60 * 5,
+        staleTime: 1000 * 60 * 60,
     });
 }
 

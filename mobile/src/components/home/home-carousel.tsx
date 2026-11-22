@@ -143,6 +143,7 @@ export function ScheduleCarousel() {
                                     <Button
                                         size="md"
                                         className="rounded-full"
+                                        // disabled={!item.isAttended}
                                         onPress={() =>
                                             router.push({
                                                 pathname: '/task/[date]',
@@ -150,8 +151,11 @@ export function ScheduleCarousel() {
                                             })
                                         }
                                     >
-                                        {item.isAttended || !item.isToday ?
+                                        {!item.isToday ?
                                             "View Past Tasks"
+                                            : 
+                                            item.isAttended ?
+                                            "View Current Tasks"
                                             :
                                             <View className="flex-row items-center gap-2 px-3">
                                                 <PingDot /><Text size="base" className="text-white">Clock In</Text>

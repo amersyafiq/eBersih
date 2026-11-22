@@ -7,6 +7,7 @@ import { DarkTheme, DefaultTheme, Stack, ThemeProvider, useRouter } from 'expo-r
 import { StatusBar } from 'expo-status-bar';
 import * as SystemUI from 'expo-system-ui';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Uniwind, useCSSVariable } from 'uniwind';
 import { PanelUIProvider, useThemeMode } from 'panelui-native';
 import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
@@ -104,14 +105,16 @@ export default function RootLayout() {
     useReactQueryDevTools(queryClient);
 
     return (
-        <SafeAreaProvider>
-            <QueryClientProvider client={queryClient}>
-                {/* Owns the portal host that dialogs, sheets, menus and toasts render
-                    into. Overlays mount into it, so it has to be above every screen. */}
-                <PanelUIProvider>
-                    <ThemedNavigation />
-                </PanelUIProvider>
-            </QueryClientProvider>
-        </SafeAreaProvider>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+            <SafeAreaProvider>
+                <QueryClientProvider client={queryClient}>
+                    {/* Owns the portal host that dialogs, sheets, menus and toasts render
+                        into. Overlays mount into it, so it has to be above every screen. */}
+                    <PanelUIProvider>
+                        <ThemedNavigation />
+                    </PanelUIProvider>
+                </QueryClientProvider>
+            </SafeAreaProvider>
+        </GestureHandlerRootView>
     );
 }

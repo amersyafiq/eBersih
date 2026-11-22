@@ -350,3 +350,58 @@ class CleanerSchedules(BaseModel):
 
     class Config:
         from_attributes = True
+
+# =====================CLEANER SCHEDULE & TASK DETAILS=========================
+class CleanerTaskItem(BaseModel):
+    AssignID: int
+    TaskID: Optional[int] = None
+    TaskName: str
+    TaskType: str
+    SpaceID: int
+    SpaceCode: str
+    SpaceName: str
+    FloorName: str
+    BlockName: str
+    EstimatedDuration: int
+    Status: str
+    StartTime: Optional[str] = None
+    EndTime: Optional[str] = None
+    CleanRating: Optional[int] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class CleanerSpaceGroup(BaseModel):
+    SpaceID: int
+    SpaceCode: str
+    SpaceName: str
+    FloorName: str
+    BlockName: str
+    QRCode: Optional[str] = None
+    tasks: List[CleanerTaskItem]
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class CleanerScheduleDetailResponse(BaseModel):
+    ScheduleDate: date
+    ZoneCode: Optional[str] = None
+    ZoneName: Optional[str] = None
+    isToday: bool
+    isAttended: bool
+    totalTasks: int
+    completedTasks: int
+    spaces: List[CleanerSpaceGroup]
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class AssignmentUpdate(BaseModel):
+    Status: Optional[str] = None
+    StartTime: Optional[str] = None
+    EndTime: Optional[str] = None
+    CleanRating: Optional[int] = None
+
+
+class AttendanceClockIn(BaseModel):
+    AttendanceDate: Optional[date] = None
